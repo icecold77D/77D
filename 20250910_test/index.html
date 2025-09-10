@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <title>靜岡咖哩介紹</title>
+
+  <!-- SEO 基本資訊 -->
+  <meta name="description" content="艷陽帶你吃遍中壢咖哩美食！靜岡咖哩唐揚雞炸蝦起司加滿滿～">
+  <meta name="keywords" content="靜岡咖哩, 中壢美食, 咖哩推薦, IG美食, 艷陽美食推薦">
+  
+  <!-- Open Graph 預覽用 -->
+  <meta property="og:site_name" content="艷陽食記 Foodistinct">
+  <meta property="og:title" content="艷陽帶你吃靜岡咖哩！中壢超好吃唐揚雞炸蝦咖哩🍛">
+  <meta property="og:description" content="唐揚雞超多汁、炸蝦超酥脆！起司滿滿不油不膩，艷陽實吃推薦❤️‍🔥">
+  <meta property="og:image" content="https://raw.githubusercontent.com/icecold77D/foodistinct_T2/main/S__100679685.jpg">
+  <meta property="og:url" content="https://icecold77d.github.io/foodistinct_T2/">
+  <meta property="og:type" content="website">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+      background-color: #fffdf7;
+      color: #333;
+    }
+
+    .carousel {
+      position: relative;
+      width: 100%;
+      height: 60vh;
+      overflow: hidden;
+    }
+
+    .carousel img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      position: absolute;
+      transition: opacity 0.5s ease;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .carousel img.active {
+      opacity: 1;
+      position: relative;
+      pointer-events: auto;
+    }
+
+    .carousel-overlay {
+      position: absolute;
+      width: 50%;
+      height: 100%;
+      top: 0;
+      cursor: pointer;
+      z-index: 10;
+    }
+
+    .carousel-overlay.left { left: 0; }
+    .carousel-overlay.right { right: 0; }
+
+    .text-block {
+      padding: 24px;
+      font-size: 1.1em;
+      white-space: pre-wrap;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 768px) {
+      .text-block {
+        font-size: 1em;
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- 圖片輪播 -->
+  <div class="carousel">
+    <img src="S__100679685.jpg" alt="靜岡咖哩照片1" class="active" />
+    <img src="S__100679686.jpg" alt="靜岡咖哩照片2" />
+    <img src="S__100679687.jpg" alt="靜岡咖哩照片3" />
+    <img src="S__100679688.jpg" alt="靜岡咖哩照片4" />
+    <img src="S__100679689.jpg" alt="靜岡咖哩照片5" />
+    <img src="S__100679690.jpg" alt="靜岡咖哩照片6" />
+    <img src="S__100679691.jpg" alt="靜岡咖哩照片7" />
+
+    <div class="carousel-overlay left" onclick="prevImage()"></div>
+    <div class="carousel-overlay right" onclick="nextImage()"></div>
+  </div>
+
+  <!-- 食記文字區 -->
+  <div class="text-block">
+❤️‍🔥今天帶大家看「靜岡咖哩」～
+🌿唐揚雞咖喱飯💰150  
+🌿日式炸蝦🍤（兩隻）💰80  
+🌿+溏心蛋💰25  
+🌿+起司🧀️20  
+
+🔆艷陽短評（卡帶牆好美，炸蝦酥脆🍤）  
+（唐揚雞飽滿鮮嫩）❤️‍🔥  
+
+🌿這天艷陽來到了位於中壢工業區附近的靜岡咖哩  
+店內有一排美美的卡帶牆  
+整齊劃一五彩繽紛很是好看  
+
+🍤🍛🍤🍛🍤🍛  
+艷陽點了一份唐揚雞咖哩飯  
+外加兩隻炸蝦！以及起司與溏心蛋  
+
+😍端上來滿滿的四大塊唐揚雞  
+飽滿多汁！juicy！juicy！～  
+誠意十足的份量讓人好愛！  
+
+🍤炸蝦也是酥酥脆脆的口感  
+重點是不！油！不！膩！  
+
+🧀️起司也如大家所見份量足足  
+雙色相間的灑在咖哩上讓人更有食慾  
+不得不說➕料➕這麼多還在200多實在划算  
+
+😋喔！真的好喜歡喲～再來去吃好了！  
+
+🍴Name：靜岡咖哩  
+🍽Where：桃園市中壢區福州二街490號  
+🥄Time：週五～週六10:30～14:00、16:30～20:00
+  </div>
+
+  <!-- JS 輪播邏輯 -->
+  <script>
+    const images = document.querySelectorAll('.carousel img');
+    let current = 0;
+
+    function showImage(index) {
+      images.forEach(img => img.classList.remove('active'));
+      current = (index + images.length) % images.length;
+      images[current].classList.add('active');
+    }
+
+    function nextImage() {
+      showImage(current + 1);
+    }
+
+    function prevImage() {
+      showImage(current - 1);
+    }
+
+    // 手機滑動支援
+    let startX = 0;
+    const carousel = document.querySelector('.carousel');
+
+    carousel.addEventListener('touchstart', e => {
+      startX = e.touches[0].clientX;
+    });
+
+    carousel.addEventListener('touchend', e => {
+      const endX = e.changedTouches[0].clientX;
+      if (endX - startX > 50) prevImage();
+      else if (startX - endX > 50) nextImage();
+    });
+  </script>
+
+  <!-- 訪問人數 -->
+  <div style="padding: 16px; font-size: 0.9em;">
+    👀 訪問人數：
+    <img src="https://visitor-badge.laobi.icu/badge?page_id=icecold77D/foodistinct_T2" alt="visitor count">
+  </div>
+
+</body>
+</html>
