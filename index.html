@@ -1,112 +1,170 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="utf-8">
-  <title>我的縮圖首頁</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>我的縮圖首頁 · Netflix 風</title>
   <style>
-    body {
-      font-family: sans-serif;
-      background: #111;
-      color: #eee;
-      margin: 0;
+    :root{
+      --bg:#0b0b0c; --fg:#f4f4f5; --muted:#a1a1aa;
+      --card:#151518; --border:#232329; --accent:#8b5cf6;
+      --card-w: 220px;
     }
-    header {
-      padding: 16px;
-      border-bottom: 1px solid #333;
-      position: sticky;
-      top: 0;
-      background: #111;
-      z-index: 10;
+    *{box-sizing:border-box}
+    html,body{margin:0;background:var(--bg);color:var(--fg);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto}
+    header{position:sticky;top:0;z-index:20;background:linear-gradient(#0b0b0c,rgba(11,11,12,.85));border-bottom:1px solid rgba(255,255,255,.06)}
+    .wrap{max-width:1280px;margin:0 auto;padding:16px}
+    h1{margin:0;font-size:20px}
+    .muted{color:var(--muted);font-size:13px}
+    section{margin-top:18px}
+    .row-head{display:flex;align-items:center;justify-content:space-between;padding:6px 2px}
+    .row-title{font-size:16px;margin:0}
+    .rail-wrap{position:relative}
+    .rail{
+      display:flex; gap:12px; padding:6px 0 14px;
+      overflow:auto; scroll-snap-type:x proximity;
+      scrollbar-width:none;
     }
-    h1 {
-      margin: 0;
-      font-size: 20px;
+    .rail::-webkit-scrollbar{display:none}
+    .card{
+      flex:0 0 var(--card-w); width:var(--card-w);
+      background:var(--card); border:1px solid var(--border);
+      border-radius:14px; overflow:hidden; text-decoration:none; color:inherit;
+      scroll-snap-align:start; transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease;
     }
-    .grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 16px;
-      padding: 16px;
-      justify-content: flex-start;
+    .card:hover{transform:translateY(-3px); border-color:#3a3a45; box-shadow:0 10px 24px rgba(0,0,0,.35)}
+    .thumb{width:100%; display:block; aspect-ratio:16/9; object-fit:cover; background:#0f0f12}
+    .cap{padding:8px 10px; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; border-top:1px solid var(--border)}
+    .nav{
+      position:absolute; top:50%; transform:translateY(-50%);
+      width:40px; height:40px; border-radius:999px; border:1px solid var(--border);
+      background:rgba(21,21,24,.75); color:var(--fg); backdrop-filter:blur(6px);
+      display:flex; align-items:center; justify-content:center; cursor:pointer; user-select:none;
+      transition:background .15s ease, transform .15s ease;
     }
-    .card {
-      background: #222;
-      padding: 8px;
-      border-radius: 8px;
-      width: 200px;
-      text-decoration: none;
-      color: inherit;
-      transition: transform .2s ease, box-shadow .2s ease;
-    }
-    .card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 6px 18px rgba(0,0,0,0.5);
-    }
-    .card img {
-      width: 100%;
-      border-radius: 6px;
-      display: block;
-      aspect-ratio: 16/9;
-      object-fit: cover;
-      background: #000;
-    }
-    .card span {
-      display: block;
-      margin-top: 6px;
-      text-align: center;
-      font-size: 14px;
-      color: #eee;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .muted {
-      color: #aaa;
-      font-size: 14px;
-      text-align: center;
-      margin: 20px;
+    .nav:hover{background:rgba(40,40,48,.9)}
+    .nav.left{left:-6px} .nav.right{right:-6px}
+    .empty{color:var(--muted); padding:24px 8px}
+    @media (max-width: 768px){
+      :root{ --card-w: 180px; }
+      .wrap{padding:12px}
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>📸 我的縮圖首頁</h1>
+    <div class="wrap">
+      <h1>📺 分類滑動牆</h1>
+      <div class="muted">左右滑動每一排；點縮圖進入該資料夾的 <code>_index.html</code></div>
+    </div>
   </header>
 
-  <div id="grid" class="grid">
-    <p class="muted">正在載入資料...</p>
-  </div>
+  <main class="wrap" id="app">
+    <p class="muted">正在載入資料…</p>
+  </main>
 
   <script>
-    const grid = document.getElementById("grid");
+    const el = (tag, cls, html) => {
+      const n = document.createElement(tag);
+      if (cls) n.className = cls;
+      if (html != null) n.innerHTML = html;
+      return n;
+    };
 
-    fetch("./data.json?ts=" + Date.now(), { cache: "no-store" })
-      .then(res => {
-        if (!res.ok) throw new Error("HTTP " + res.status);
-        return res.json();
-      })
-      .then(data => {
-        if (!Array.isArray(data) || data.length === 0) {
-          grid.innerHTML = "<p class='muted'>目前沒有任何項目</p>";
+    // 讓滑鼠滾輪可做水平捲動、拖曳可滑動
+    function enhanceRailScroll(rail){
+      rail.addEventListener('wheel', (e) => {
+        if (Math.abs(e.deltaX) < Math.abs(e.deltaY)) {
+          rail.scrollLeft += e.deltaY; // 垂直滾改為水平捲
+          e.preventDefault();
+        }
+      }, { passive:false });
+
+      let dragging = false, sx = 0, sl = 0;
+      rail.addEventListener('pointerdown', (e) => {
+        dragging = true; sx = e.clientX; sl = rail.scrollLeft;
+        rail.setPointerCapture(e.pointerId);
+        rail.style.cursor = 'grabbing';
+      });
+      rail.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        rail.scrollLeft = sl - (e.clientX - sx);
+      });
+      ['pointerup','pointercancel','pointerleave'].forEach(evt=>{
+        rail.addEventListener(evt, () => { dragging=false; rail.style.cursor=''; });
+      });
+    }
+
+    function makeRow(section){
+      // section: { title, items: [ {name,img,href,date?} ] }
+      const container = el('section');
+
+      const head = el('div', 'row-head');
+      head.appendChild(el('h2', 'row-title', section.title || '未命名分類'));
+      container.appendChild(head);
+
+      if (!Array.isArray(section.items) || section.items.length === 0){
+        container.appendChild(el('div', 'empty', '此分類目前沒有項目'));
+        return container;
+      }
+
+      // 依 date 由新到舊排（若無 date 則維持原樣）
+      const items = [...section.items];
+      items.sort((a,b)=>{
+        const da = Date.parse(a.date || '') || 0;
+        const db = Date.parse(b.date || '') || 0;
+        return db - da; // 新→舊
+      });
+
+      const railWrap = el('div', 'rail-wrap');
+      const rail = el('div', 'rail');
+      items.forEach(it=>{
+        const a = el('a', 'card');
+        a.href = it.href;
+        a.innerHTML = `
+          <img class="thumb" src="${it.img}" alt="${it.name || ''}">
+          <div class="cap">${it.name || ''}</div>
+        `;
+        rail.appendChild(a);
+      });
+      railWrap.appendChild(rail);
+
+      const navL = el('div', 'nav left', '‹');
+      const navR = el('div', 'nav right', '›');
+      const jump = () => Math.max(rail.clientWidth * 0.9, 320);
+      navL.addEventListener('click', ()=> rail.scrollBy({ left: -jump(), behavior:'smooth' }));
+      navR.addEventListener('click', ()=> rail.scrollBy({ left:  jump(), behavior:'smooth' }));
+      railWrap.appendChild(navL);
+      railWrap.appendChild(navR);
+
+      enhanceRailScroll(rail);
+      container.appendChild(railWrap);
+      return container;
+    }
+
+    async function boot(){
+      const app = document.getElementById('app');
+      const url = new URL('./data.json', location.href);
+      url.searchParams.set('v', Date.now()); // 破快取
+      try{
+        const r = await fetch(url.toString(), { cache: 'no-store' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const data = await r.json();
+
+        // data 預期是一個「已照你想要順序排好的陣列」。
+        // 例如：[{title:"冒險類", items:[...]}, {title:"美食類", items:[...]}]
+        if (!Array.isArray(data) || data.length === 0){
+          app.innerHTML = '<p class="muted">目前沒有任何分類</p>';
           return;
         }
-        grid.innerHTML = "";
-        data.forEach(item => {
-          const a = document.createElement("a");
-          a.href = item.href;
-          a.className = "card";
-          a.innerHTML = `
-            <img src="${item.img}" alt="${item.name}">
-            <span>${item.name}</span>
-          `;
-          grid.appendChild(a);
-        });
-      })
-      .catch(err => {
-        grid.innerHTML =
-          "<p class='muted' style='color:#f88'>載入失敗：" + err.message + "</p>";
-      });
+
+        app.innerHTML = '';
+        data.forEach(section => app.appendChild(makeRow(section)));
+      }catch(err){
+        app.innerHTML = `<p class="muted" style="color:#f88">載入失敗：${err.message}</p>`;
+      }
+    }
+    boot();
   </script>
 </body>
 </html>
