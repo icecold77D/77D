@@ -3,23 +3,95 @@
 <head>
   <meta charset="utf-8">
   <title>我的縮圖首頁</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body { font-family: sans-serif; background: #111; color: #eee; }
-    .grid { display: flex; flex-wrap: wrap; gap: 16px; }
-    .card { background: #222; padding: 8px; border-radius: 8px; width: 200px; }
-    .card img { width: 100%; border-radius: 6px; }
-    .card span { display: block; margin-top: 6px; text-align: center; }
+    body {
+      font-family: sans-serif;
+      background: #111;
+      color: #eee;
+      margin: 0;
+    }
+    header {
+      padding: 16px;
+      border-bottom: 1px solid #333;
+      position: sticky;
+      top: 0;
+      background: #111;
+      z-index: 10;
+    }
+    h1 {
+      margin: 0;
+      font-size: 20px;
+    }
+    .grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding: 16px;
+      justify-content: flex-start;
+    }
+    .card {
+      background: #222;
+      padding: 8px;
+      border-radius: 8px;
+      width: 200px;
+      text-decoration: none;
+      color: inherit;
+      transition: transform .2s ease, box-shadow .2s ease;
+    }
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+    }
+    .card img {
+      width: 100%;
+      border-radius: 6px;
+      display: block;
+      aspect-ratio: 16/9;
+      object-fit: cover;
+      background: #000;
+    }
+    .card span {
+      display: block;
+      margin-top: 6px;
+      text-align: center;
+      font-size: 14px;
+      color: #eee;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .muted {
+      color: #aaa;
+      font-size: 14px;
+      text-align: center;
+      margin: 20px;
+    }
   </style>
 </head>
 <body>
-  <h1>📸 我的首頁</h1>
-  <div id="grid" class="grid"></div>
+  <header>
+    <h1>📸 我的縮圖首頁</h1>
+  </header>
+
+  <div id="grid" class="grid">
+    <p class="muted">正在載入資料...</p>
+  </div>
 
   <script>
-    fetch("./data.json")
-      .then(res => res.json())
-      .then(data => { 
-        const grid = document.getElementById("grid");
+    const grid = document.getElementById("grid");
+
+    fetch("./data.json?ts=" + Date.now(), { cache: "no-store" })
+      .then(res => {
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return res.json();
+      })
+      .then(data => {
+        if (!Array.isArray(data) || data.length === 0) {
+          grid.innerHTML = "<p class='muted'>目前沒有任何項目</p>";
+          return;
+        }
+        grid.innerHTML = "";
         data.forEach(item => {
           const a = document.createElement("a");
           a.href = item.href;
@@ -30,6 +102,10 @@
           `;
           grid.appendChild(a);
         });
+      })
+      .catch(err => {
+        grid.innerHTML =
+          "<p class='muted' style='color:#f88'>載入失敗：" + err.message + "</p>";
       });
   </script>
 </body>
