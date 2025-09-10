@@ -16,9 +16,9 @@
   <div id="grid" class="grid"></div>
 
   <script>
-    fetch("data.json")
+    fetch("./data.json")
       .then(res => res.json())
-      .then(data => {
+      .then(data => { 
         const grid = document.getElementById("grid");
         data.forEach(item => {
           const a = document.createElement("a");
