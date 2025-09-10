@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <title>我的縮圖首頁</title>
+  <style>
+    body { font-family: sans-serif; background: #111; color: #eee; }
+    .grid { display: flex; flex-wrap: wrap; gap: 16px; }
+    .card { background: #222; padding: 8px; border-radius: 8px; width: 200px; }
+    .card img { width: 100%; border-radius: 6px; }
+    .card span { display: block; margin-top: 6px; text-align: center; }
+  </style>
+</head>
+<body>
+  <h1>📸 我的首頁</h1>
+  <div id="grid" class="grid"></div>
+
+  <script>
+    fetch("data.json")
+      .then(res => res.json())
+      .then(data => {
+        const grid = document.getElementById("grid");
+        data.forEach(item => {
+          const a = document.createElement("a");
+          a.href = item.href;
+          a.className = "card";
+          a.innerHTML = `
+            <img src="${item.img}" alt="${item.name}">
+            <span>${item.name}</span>
+          `;
+          grid.appendChild(a);
+        });
+      });
+  </script>
+</body>
+</html>
