@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Snake · Web 版（GitHub Pages 可直接跑）</title>
+  <style>
+    :root{
+      --bg:#0b0b0c; --fg:#f4f4f5; --muted:#a1a1aa;
+      --card:#151518; --border:#232329; --accent:#22c55e;
+      --cell-size: 20px;
+      --top-h: 70px;     /* 對應 GRID_OFFSET_TOP */
+      --pad-h: 200px;    /* 對應 GRID_OFFSET_Y 約略縮小以適配網頁 */
+      --btn: 72px;
+      --gap: 90px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto}
+    header{
+      height:var(--top-h);
+      display:flex;align-items:center;gap:24px;padding:0 16px;
+      border-bottom:1px solid var(--border);
+      position:sticky;top:0;background:linear-gradient(#0b0b0c,rgba(11,11,12,.9));
+      z-index:10;
+    }
+    header .title{font-weight:600; letter-spacing:.5px}
+    header .score{margin-left:auto;display:flex;gap:16px;font-variant-numeric:tabular-nums}
+    header .score span{color:#facc15}
+    #wrap{
+      position:relative;
+      width:100%;
+      height:calc(100% - var(--top-h));
+      display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+      overflow:hidden;
+    }
+    #game-area{
+      position:relative;
+      width:100%;
+      display:flex;align-items:center;justify-content:center;
+      padding-top:8px;
+    }
+    canvas{
+      background:#111214;
+      border:2px solid #fff;
+      image-rendering: pixelated;
+      max-width:100vw;
+      max-height:calc(100vh - var(--top-h) - var(--pad-h) - 16px);
+    }
+    #overlay{
+      position:absolute;inset:0;
+      display:flex;align-items:center;justify-content:center;
+      pointer-events:none;
+      font-weight:600;text-align:center;line-height:1.4;
+    }
+    #overlay .msg{
+      background:rgba(0,0,0,.55);
+      padding:16px 20px;border:1px solid var(--border);border-radius:12px;
+      backdrop-filter: blur(4px);
+    }
+    #pad{
+      height:var(--pad-h);
+      display:flex;align-items:center;justify-content:center;
+      gap:24px;
+    }
+    .dpad{
+      position:relative; width: calc(var(--gap)*2 + var(--btn)); height: calc(var(--gap)*2 + var(--btn));
+    }
+    .btn{
+      position:absolute; width:var(--btn); height:var(--btn);
+      border-radius:12px; background:#1e1f25; border:1px solid var(--border);
+      display:flex;align-items:center;justify-content:center; user-select:none; -webkit-user-select:none;
+      touch-action: manipulation;
+      box-shadow: 0 2px 0 #0f1013;
+    }
+    .btn:active{transform: translateY(2px)}
+    .btn span{font-size:28px;color:#e5e7eb}
+    .up{left:calc(50% - var(--btn)/2); top:0; }
+    .down{left:calc(50% - var(--btn)/2); bottom:0;}
+    .left{left:0; top:calc(50% - var(--btn)/2);}
+    .right{right:0; top:calc(50% - var(--btn)/2);}
+    .hint{color:var(--muted); font-size:12px; margin-top:4px; text-align:center}
+    @media (min-width:900px){
+      #pad{height:160px}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title">🐍 Snake</div>
+    <div class="score">
+      <div>Score: <span id="score">0</span></div>
+      <div>High Score: <span id="high">0</span></div>
+    </div>
+  </header>
+
+  <div id="wrap">
+    <div id="game-area">
+      <canvas id="c"></canvas>
+      <div id="overlay" hidden><div class="msg" id="overlayText"></div></div>
+    </div>
+    <div id="pad" aria-label="方向搖桿（手機可點）">
+      <div class="dpad">
+        <div class="btn up"    data-dir="U" aria-label="上"><span>▲</span></div>
+        <div class="btn down"  data-dir="D" aria-label="下"><span>▼</span></div>
+        <div class="btn left"  data-dir="L" aria-label="左"><span>◀</span></div>
+        <div class="btn right" data-dir="R" aria-label="右"><span>▶</span></div>
+      </div>
+    </div>
+    <div class="hint">鍵盤方向鍵 / WASD 也可操作。Game Over 後點畫面可重開。</div>
+  </div>
+
+  <script>
+  // ====== 原常數（對齊你的 Python 版） ======
+  const CELL_SIZE = 20;            // px
+  const SPEED_SEC = 0.3;           // 每步秒數
+  const GRID_OFFSET_TOP = 70;      // 顯示在 header，這裡保留概念
+  const GRID_OFFSET_Y = 240;       // 下方控制區高度 -> 由 CSS 控；此處僅保留對齊概念
+
+  // ====== 狀態 ======
+  const cv = document.getElementById('c');
+  const ctx = cv.getContext('2d');
+  const overlay = document.getElementById('overlay');
+  const overlayText = document.getElementById('overlayText');
+  const $score = document.getElementById('score');
+  const $high = document.getElementById('high');
+
+  let gridW = 0, gridH = 0;
+  let snake = [];             // 陣列: [ {x,y}, ... ] 頭在 index 0
+  let direction = {x:1, y:0};
+  let nextDir   = {x:1, y:0};
+  let food = {x:0, y:0};
+  let score = 0;
+  let highScore = Number(localStorage.getItem('snake_highscore') || '0');
+  let acc = 0;                // 時間累加
+  let lastTs = 0;
+  let running = true;
+  let startedOnce = false;    // 用於音效授權
+
+  $high.textContent = String(highScore);
+
+  // ====== 簡單音效（需玩家互動後才可觸發） ======
+  let audioCtx = null;
+  function ensureAudio(){
+    if(!audioCtx){
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+  }
+  function beep(freq=660, dur=0.07, type='square', vol=0.1){
+    if(!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    gain.gain.value = vol;
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start();
+    setTimeout(()=>{ osc.stop(); osc.disconnect(); gain.disconnect(); }, dur*1000);
+  }
+  const sfx = {
+    eat: ()=>beep(800, 0.09, 'square', 0.12),
+    boom: ()=>{ beep(180, 0.12, 'sawtooth', 0.15); setTimeout(()=>beep(120, 0.12,'sawtooth',0.15),90); }
+  };
+
+  // ====== 初始化與尺寸 ======
+  function computeGrid(){
+    const topH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--top-h'));
+    const padH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--pad-h'));
+    const availW = Math.floor(window.innerWidth);
+    const availH = Math.floor(window.innerHeight - topH - padH - 16); // 16 微調 padding
+    gridW = Math.max(12, Math.floor(availW / CELL_SIZE));
+    gridH = Math.max(10, Math.floor(availH / CELL_SIZE));
+    cv.width  = gridW * CELL_SIZE;
+    cv.height = gridH * CELL_SIZE;
+  }
+
+  function resetGame(){
+    running = true;
+    acc = 0; lastTs = 0;
+    score = 0; $score.textContent = '0';
+    direction = {x:1, y:0};
+    nextDir   = {x:1, y:0};
+    snake = [ {x:5,y:5}, {x:4,y:5}, {x:3,y:5} ];
+    spawnFood();
+    hideOverlay();
+  }
+
+  function spawnFood(){
+    while(true){
+      const fx = Math.floor(Math.random()*(gridW-2))+1;
+      const fy = Math.floor(Math.random()*(gridH-2))+1;
+      if(!snake.some(s=>s.x===fx && s.y===fy)){
+        food = {x:fx, y:fy};
+        return;
+      }
+    }
+  }
+
+  function showOverlay(text){
+    overlayText.innerHTML = text;
+    overlay.hidden = false;
+  }
+  function hideOverlay(){ overlay.hidden = true; }
+
+  // ====== 更新邏輯 ======
+  function tickStep(){
+    // 套用下一方向（避免當步反向）
+    if( (nextDir.x !== -direction.x) || (nextDir.y !== -direction.y) ){
+      direction = {...nextDir};
+    }
+    const head = snake[0];
+    const nh = {x: head.x + direction.x, y: head.y + direction.y};
+
+    // 撞牆/撞身體
+    if(nh.x < 0 || nh.x >= gridW || nh.y < 0 || nh.y >= gridH || snake.some(s=>s.x===nh.x && s.y===nh.y)){
+      running = false;
+      sfx.boom();
+      showOverlay('Game Over<br>點擊畫面或按任意鍵重開');
+      return;
+    }
+
+    // 前插新頭
+    snake.unshift(nh);
+
+    // 吃到食物
+    if(nh.x === food.x && nh.y === food.y){
+      score += 1; $score.textContent = String(score);
+      if(score > highScore){
+        highScore = score;
+        localStorage.setItem('snake_highscore', String(highScore));
+        $high.textContent = String(highScore);
+      }
+      sfx.eat();
+      spawnFood();
+    }else{
+      // 移除尾端
+      snake.pop();
+    }
+  }
+
+  // ====== 繪圖 ======
+  function draw(){
+    // 背景
+    ctx.fillStyle = '#0f1115';
+    ctx.fillRect(0,0,cv.width, cv.height);
+
+    // 邊界（外框已以 CSS border 表示；這裡畫細內框更清楚）
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(0.5, 0.5, cv.width-1, cv.height-1);
+
+    // 食物
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(food.x*CELL_SIZE, food.y*CELL_SIZE, CELL_SIZE, CELL_SIZE);
+
+    // 蛇
+    ctx.fillStyle = '#22c55e';
+    for(const s of snake){
+      ctx.fillRect(s.x*CELL_SIZE, s.y*CELL_SIZE, CELL_SIZE, CELL_SIZE);
+    }
+  }
+
+  // ====== 主迴圈 ======
+  function loop(ts){
+    if(!lastTs) lastTs = ts;
+    const dt = (ts - lastTs)/1000;
+    lastTs = ts;
+    if(running){
+      acc += dt;
+      while(acc >= SPEED_SEC){
+        acc -= SPEED_SEC;
+        tickStep();
+        if(!running) break;
+      }
+    }
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  // ====== 輸入：方向控制 ======
+  function setDir(nx, ny){
+    // 不允許立即反向
+    if( (nx === -direction.x && ny === 0) || (ny === -direction.y && nx === 0) ){
+      return;
+    }
+    nextDir = {x:nx, y:ny};
+  }
+
+  // 手機搖桿
+  document.querySelectorAll('.btn').forEach(b=>{
+    const dir = b.dataset.dir;
+    const go = ()=>{
+      if(!startedOnce){ ensureAudio(); startedOnce = true; }
+      if(dir==='U') setDir(0,-1);
+      if(dir==='D') setDir(0, 1);
+      if(dir==='L') setDir(-1,0);
+      if(dir==='R') setDir(1, 0);
+    };
+    b.addEventListener('pointerdown', go);
+    b.addEventListener('click', go);
+  });
+
+  // 鍵盤
+  window.addEventListener('keydown', (e)=>{
+    if(!startedOnce){ ensureAudio(); startedOnce = true; }
+    if(!running){
+      resetGame();
+      return;
+    }
+    const k = e.key.toLowerCase();
+    if(k==='arrowup' || k==='w') setDir(0,-1);
+    else if(k==='arrowdown' || k==='s') setDir(0,1);
+    else if(k==='arrowleft' || k==='a') setDir(-1,0);
+    else if(k==='arrowright' || k==='d') setDir(1,0);
+  });
+
+  // 重新開始（點畫面）
+  document.getElementById('game-area').addEventListener('pointerdown', ()=>{
+    if(!startedOnce){ ensureAudio(); startedOnce = true; }
+    if(!running){ resetGame(); }
+  });
+
+  // 尺寸變化
+  function resizeAll(){
+    computeGrid();
+    // 若重設尺寸，盡量維持蛇在範圍內；超出就重開
+    if(snake.some(s=>s.x<0||s.x>=gridW||s.y<0||s.y>=gridH)){
+      resetGame();
+    }
+  }
+  window.addEventListener('resize', resizeAll);
+  window.addEventListener('orientationchange', resizeAll);
+
+  // ====== 啟動 ======
+  computeGrid();
+  resetGame();
+  requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
