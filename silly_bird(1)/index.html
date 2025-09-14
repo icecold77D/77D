@@ -1,1 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <title>《傻鳥日常》(1)</title>
+
+  <!-- SEO 基本資訊 -->
+  <meta name="description" content="這是微光的第二組貼圖～《傻鳥日常》">
+  <meta name="keywords" content="微光繪畫, 《傻鳥日常》, 貼圖">
+  
+  <!-- Open Graph 預覽用 -->
+  <meta property="og:site_name" content="微光繪畫 Foodistinct">
+  <meta property="og:title" content="超可愛的人氣角色-《傻鳥日常》~傻憨傻憨的傻鳥心中到底在想些甚麼呢?!!!❤️‍🔥">
+  <meta property="og:description" content="超可愛的人氣角色-《傻鳥日常》~傻憨傻憨的傻鳥心中到底在想些甚麼呢?!!!❤️‍🔥">
+  <meta property="og:image" content="https://raw.githubusercontent.com/icecold77D/77D/silly_bird(1)/title.jpg">
+  <meta property="og:url" content="https://icecold77d.github.io/77D/silly_bird(1)/">
+  <meta property="og:type" content="website">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+      background-color: #fffdf7;
+      color: #333;
+    }
+
+    .carousel {
+      position: relative;
+      width: 100%;
+      height: 60vh;
+      overflow: hidden;
+    }
+
+    .carousel img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      position: absolute;
+      transition: opacity 0.5s ease;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .carousel img.active {
+      opacity: 1;
+      position: relative;
+      pointer-events: auto;
+    }
+
+    .carousel-overlay {
+      position: absolute;
+      width: 50%;
+      height: 100%;
+      top: 0;
+      cursor: pointer;
+      z-index: 10;
+    }
+
+    .carousel-overlay.left { left: 0; }
+    .carousel-overlay.right { right: 0; }
+
+    .text-block {
+      padding: 24px;
+      font-size: 1.1em;
+      white-space: pre-wrap;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 768px) {
+      .text-block {
+        font-size: 1em;
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- 圖片輪播 -->
+  <div class="carousel">
+    <img src="title.jpg" alt="《傻鳥日常》照片1" class="active" />
+    <img src="S__136413190.jpg" alt="《傻鳥日常》照片2" />
+    <img src="S__136413187_0.jpg" alt="《傻鳥日常》照片3" />
+
+    <div class="carousel-overlay left" onclick="prevImage()"></div>
+    <div class="carousel-overlay right" onclick="nextImage()"></div>
+  </div>
+
+  <!-- 文字描述區 -->
+  <div class="text-block">
+❤️‍🔥今天帶大家看「超可愛的人氣角色-《傻鳥日常》❤️‍🔥」～
+    <a href="https://line.me/S/sticker/31110726?_from=lcm" target="_blank">
+      點我下載貼圖
+    </a>
+  </div>
+
+
+  <!-- JS 輪播邏輯 -->
+  <script>
+    const images = document.querySelectorAll('.carousel img');
+    let current = 0;
+
+    function showImage(index) {
+      images.forEach(img => img.classList.remove('active'));
+      current = (index + images.length) % images.length;
+      images[current].classList.add('active');
+    }
+
+    function nextImage() {
+      showImage(current + 1);
+    }
+
+    function prevImage() {
+      showImage(current - 1);
+    }
+
+    // 手機滑動支援
+    let startX = 0;
+    const carousel = document.querySelector('.carousel');
+
+    carousel.addEventListener('touchstart', e => {
+      startX = e.touches[0].clientX;
+    });
+
+    carousel.addEventListener('touchend', e => {
+      const endX = e.changedTouches[0].clientX;
+      if (endX - startX > 50) prevImage();
+      else if (startX - endX > 50) nextImage();
+    });
+  </script>
+
+  <!-- 訪問人數 -->
+  <div style="padding: 16px; font-size: 0.9em;">
+    👀 訪問人數：
+    <img src="https://visitor-badge.laobi.icu/badge?page_id=icecold77D/77D/silly_bird(1)" alt="visitor count">
+  </div>
+
+</body>
+</html>
 
