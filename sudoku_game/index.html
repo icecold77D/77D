@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<title>Sudoku — Web版（大按鈕＋雙排功能鍵）</title>
+<style>
+  :root{
+    --bg:#f7f7fa;
+    --sel:#ebf5ff;
+    --hilite:#eeeeff;
+    --fixed:#1a1e26;
+    --user:#223456;
+    --err:#d51f1f;
+    --note:#5a708e;
+  }
+  *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Helvetica,Arial;}
+  body{margin:0;background:var(--bg);color:#222;display:flex;justify-content:center;min-height:100vh}
+  .app{width:min(100vw,800px);padding:12px}
+  h1{font-size:18px;margin:6px 4px 12px}
+  .topbar{display:flex;gap:8px;align-items:center;margin:0 4px 10px}
+  .topbar select,.topbar button{padding:8px 12px;border:1px solid #c9c9d4;background:#fff;border-radius:8px}
+  .board-wrap{display:flex;justify-content:center}
+  .board{
+    width:min(92vw,580px);aspect-ratio:1/1;background:#fff;border-radius:12px;position:relative;
+    box-shadow:0 2px 10px rgba(0,0,0,.06);padding:8px;
+  }
+  .grid{
+    position:absolute;inset:8px;display:grid;
+    grid-template-columns:repeat(9,1fr);
+    grid-template-rows:repeat(9,1fr);
+    background:#fff;
+  }
+  .cell{
+    border:1px solid #cfd2da;
+    background:#fff;
+    display:flex;align-items:center;justify-content:center;
+    font-weight:600;font-size:22px;color:var(--user);
+    user-select:none;cursor:pointer;
+  }
+  /* 3×3 粗線 */
+  .cell[data-r="0"], .cell[data-r="3"], .cell[data-r="6"]{ border-top:2px solid #000; }
+  .cell[data-c="0"], .cell[data-c="3"], .cell[data-c="6"]{ border-left:2px solid #000; }
+  .cell[data-r="8"]{ border-bottom:2px solid #000; }
+  .cell[data-c="8"]{ border-right:2px solid #000; }
+
+  .cell.fixed{color:var(--fixed)}
+  .cell.sel{background:var(--sel)}
+  .cell.row-hilite{background:var(--hilite)}
+  .cell.col-hilite{background:var(--hilite)}
+  .cell.err{color:#fff;background:var(--err)}
+  .notes{position:absolute;inset:2px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr)}
+  .note{font-size:10px;color:var(--note);display:flex;align-items:center;justify-content:center}
+
+  .pad{margin:12px 4px 0;display:grid;grid-template-columns:repeat(9,1fr);gap:6px}
+  .pad button{
+    padding:10px 0;font-size:18px;border:1px solid #c9c9d4;background:#fff;border-radius:8px;
+    box-shadow:0 1px 2px rgba(0,0,0,.04);cursor:pointer;
+  }
+
+  .func{margin:10px 4px 0;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .func button{
+    padding:12px 8px;font-size:16px;border:1px solid #c9c9d4;background:#fff;border-radius:10px;
+    cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.04);
+  }
+  .badge{margin-left:auto;font-size:13px;padding:6px 10px;border-radius:999px;background:#fff;border:1px solid #c9c9d4}
+
+  .toast{
+    position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
+    background:#111;color:#fff;padding:10px 14px;border-radius:999px;font-size:15px;
+    opacity:0;pointer-events:none;transition:opacity .2s, transform .2s;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px)}
+  @media (min-width:740px){
+    .pad button{font-size:20px;padding:12px 0}
+    .func button{font-size:17px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <h1>Sudoku</h1>
+    <span class="badge" id="notesBadge">✎ Notes：OFF</span>
+    <span class="badge" id="diffBadge">難度：Medium</span>
+  </div>
+
+  <div class="board-wrap">
+    <div class="board">
+      <div id="grid" class="grid"></div>
+    </div>
+  </div>
+
+  <div class="pad" id="numPad"></div>
+
+  <div class="func">
+    <button id="eraseBtn">⌫ Erase</button>
+    <button id="notesBtn">✎ Notes</button>
+    <button id="checkBtn">✓ Check</button>
+    <button id="hintBtn">💡 Hint</button>
+    <button id="undoBtn">↶ Undo</button>
+    <button id="resetBtn">⟲ Reset</button>
+    <button id="solveBtn">🧩 Solve</button>
+    <button id="newBtn">🎲 New</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const GRID_SIZE=9,SUB=3;
+function pattern(r,c){return (SUB*(r%SUB)+Math.floor(r/SUB)+c)%GRID_SIZE;}
+function shuffled(a){return a.map(x=>[Math.random(),x]).sort((x,y)=>x[0]-y[0]).map(x=>x[1]);}
+function randomFullGrid(){
+  const rBase=[0,1,2];
+  const rows=shuffled(rBase).flatMap(g=>shuffled(rBase).map(r=>g*SUB+r));
+  const cols=shuffled(rBase).flatMap(g=>shuffled(rBase).map(c=>g*SUB+c));
+  const nums=shuffled([1,2,3,4,5,6,7,8,9]);
+  const g=Array.from({length:9},()=>Array(9).fill(0));
+  for(let r=0;r<9;r++)for(let c=0;c<9;c++)g[r][c]=nums[pattern(rows[r],cols[c])];
+  return g;
+}
+function isValid(grid,r,c,val){
+  for(let x=0;x<9;x++){if(grid[r][x]===val&&x!==c)return false;}
+  for(let y=0;y<9;y++){if(grid[y][c]===val&&y!==r)return false;}
+  const br=Math.floor(r/3)*3,bc=Math.floor(c/3)*3;
+  for(let y=br;y<br+3;y++)for(let x=bc;x<bc+3;x++){if(grid[y][x]===val&&(y!==r||x!==c))return false;}
+  return true;
+}
+function findEmpty(grid){for(let r=0;r<9;r++)for(let c=0;c<9;c++)if(grid[r][c]===0)return [r,c];return null;}
+function countSolutions(grid,limit=2){
+  let cnt=0;
+  function dfs(){
+    if(cnt>=limit)return;
+    const pos=findEmpty(grid);
+    if(!pos){cnt++;return;}
+    const [r,c]=pos;
+    for(let v=1;v<=9;v++){
+      if(isValid(grid,r,c,v)){
+        grid[r][c]=v;dfs();grid[r][c]=0;
+        if(cnt>=limit)return;
+      }
+    }
+  }
+  dfs();return cnt;
+}
+const DIFFICULTY_MAP={Easy:[38,45],Medium:[46,52],Hard:[53,58],Insane:[59,64]};
+function deepCopy(g){return g.map(row=>row.slice());}
+function generatePuzzle(diff="Medium"){
+  const [lo,hi]=DIFFICULTY_MAP[diff]||DIFFICULTY_MAP.Medium;
+  const full=randomFullGrid();
+  const solution=deepCopy(full);
+  const targetHoles=Math.floor(Math.random()*(hi-lo+1))+lo;
+  const coords=[];for(let r=0;r<9;r++)for(let c=0;c<9;c++)coords.push([r,c]);
+  coords.sort(()=>Math.random()-0.5);
+  const puzzle=deepCopy(full);
+  let removed=0;
+  for(const [r,c] of coords){
+    if(removed>=targetHoles)break;
+    const backup=puzzle[r][c];puzzle[r][c]=0;
+    const test=deepCopy(puzzle);
+    if(countSolutions(test,2)!==1)puzzle[r][c]=backup;else removed++;
+  }
+  return {puzzle,solution};
+}
+
+const state={
+  board:Array.from({length:9},()=>Array(9).fill(0)),
+  solution:null,
+  fixed:Array.from({length:9},()=>Array(9).fill(false)),
+  notes:Array.from({length:9},()=>Array.from({length:9},()=>new Set())),
+  history:[],sel:null,notesMode:false,difficulty:'Medium',
+};
+const gridEl=document.getElementById('grid');
+const numPadEl=document.getElementById('numPad');
+const notesBadge=document.getElementById('notesBadge');
+const diffBadge=document.getElementById('diffBadge');
+const toastEl=document.getElementById('toast');
+function showToast(msg){
+  toastEl.textContent=msg;
+  toastEl.classList.add('show');
+  setTimeout(()=>toastEl.classList.remove('show'),1200);
+}
+function renderBoard(){
+  gridEl.innerHTML='';
+  for(let r=0;r<9;r++){
+    for(let c=0;c<9;c++){
+      const v=state.board[r][c];
+      const div=document.createElement('div');
+      div.className='cell';
+      div.dataset.r=r;div.dataset.c=c;
+      if(state.fixed[r][c])div.classList.add('fixed');
+      if(state.sel&&(state.sel[0]===r||state.sel[1]===c)){
+        if(state.sel[0]===r)div.classList.add('row-hilite');
+        if(state.sel[1]===c)div.classList.add('col-hilite');
+      }
+      if(state.sel&&state.sel[0]===r&&state.sel[1]===c)div.classList.add('sel');
+      if(v!==0){div.textContent=v;}else{
+        const notes=Array.from(state.notes[r][c]).sort((a,b)=>a-b);
+        if(notes.length){
+          const notesEl=document.createElement('div');notesEl.className='notes';
+          for(let k=1;k<=9;k++){
+            const n=document.createElement('div');n.className='note';
+            if(notes.includes(k))n.textContent=String(k);
+            notesEl.appendChild(n);
+          }
+          div.appendChild(notesEl);
+        }
+      }
+      div.addEventListener('click',()=>{state.sel=[r,c];renderBoard();});
+      gridEl.appendChild(div);
+    }
+  }
+}
+function setNumber(val){
+  if(!state.sel)return;
+  const [r,c]=state.sel;
+  if(state.fixed[r][c])return;
+  const oldVal=state.board[r][c];
+  const oldNotes=new Set(state.notes[r][c]);
+  if(state.notesMode){
+    if(val===0)return;
+    if(state.notes[r][c].has(val))state.notes[r][c].delete(val);
+    else state.notes[r][c].add(val);
+    state.history.push({r,c,oldVal,newVal:oldVal,oldNotes});
+  }else{
+    state.board[r][c]=val;
+    state.notes[r][c].clear();
+    state.history.push({r,c,oldVal,newVal:val,oldNotes});
+  }
+  renderBoard();autoCheckCompletion();
+}
+function erase(){
+  if(!state.sel)return;
+  const [r,c]=state.sel;
+  if(state.fixed[r][c])return;
+  const oldVal=state.board[r][c];
+  const oldNotes=new Set(state.notes[r][c]);
+  if(oldVal===0&&state.notes[r][c].size===0)return;
+  state.board[r][c]=0;state.notes[r][c].clear();
+  state.history.push({r,c,oldVal,newVal:0,oldNotes});
+  renderBoard();
+}
+function undo(){
+  const h=state.history.pop();if(!h)return;
+  state.board[h.r][h.c]=h.oldVal;
+  state.notes[h.r][h.c]=new Set(h.oldNotes);
+  renderBoard();
+}
+function checkErrors(){
+  const cells=Array.from(gridEl.children);
+  for(let r=0;r<9;r++){
+    for(let c=0;c<9;c++){
+      const i=r*9+c,v=state.board[r][c];
+      cells[i].classList.remove('err');
+      if(v!==0&&state.solution&&state.solution[r][c]!==v){
+        cells[i].classList.add('err');
+      }
+    }
+  }
+}
+function hint(){
+  const empties=[];
+  for(let r=0;r<9;r++)for(let c=0;c<9;c++)if(state.board[r][c]===0)empties.push([r,c]);
+  if(!empties.length)return;
+  const [r,c]=empties[Math.floor(Math.random()*empties.length)];
+  const val=state.solution[r][c];state.sel=[r,c];setNumber(val);
+}
+function solveAll(){
+  for(let r=0;r<9;r++){
+    for(let c=0;c<9;c++){
+      if(!state.fixed[r][c]){
+        const oldVal=state.board[r][c];
+        const oldNotes=new Set(state.notes[r][c]);
+        state.board[r][c]=state.solution[r][c];
+        state.notes[r][c].clear();
+        if(oldVal!==state.board[r][c]){
+          state.history.push({r,c,oldVal,newVal:state.board[r][c],oldNotes});
+        }
+      }
+    }
+  }
+  renderBoard();
+}
+function isComplete(){
+  for(let r=0;r<9;r++)for(let c=0;c<9;c++)if(state.board[r][c]===0)return false;
+  return true;
+}
+function autoCheckCompletion(){
+  if(isComplete()){
+    for(let r=0;r<9;r++)for(let c=0;c<9;c++){
+      if(state.board[r][c]!==state.solution[r][c]){showToast('請繼續加油 💪');return;}
+    }
+    showToast('太厲害了 🎉');
+  }
+}
+function resetBoard(){
+  for(let r=0;r<9;r++)for(let c=0;c<9;c++){
+    if(!state.fixed[r][c])state.board[r][c]=0;
+    state.notes[r][c].clear();
+  }
+  state.history.length=0;state.sel=null;renderBoard();
+}
+function newGame(diff){
+  state.difficulty=diff||state.difficulty;
+  diffBadge.textContent=`難度：${state.difficulty}`;
+  const {puzzle,solution}=generatePuzzle(state.difficulty);
+  state.board=deepCopy(puzzle);state.solution=solution;
+  state.fixed=puzzle.map(row=>row.map(v=>v!==0));
+  state.notes=Array.from({length:9},()=>Array.from({length:9},()=>new Set()));
+  state.history.length=0;state.sel=null;renderBoard();
+}
+function buildPad(){
+  numPadEl.innerHTML='';
+  for(let n=1;n<=9;n++){
+    const b=document.createElement('button');b.textContent=n;
+    b.addEventListener('click',()=>setNumber(n));
+    numPadEl.appendChild(b);
+  }
+}
+function hookButtons(){
+  document.getElementById('eraseBtn').onclick=erase;
+  document.getElementById('notesBtn').onclick=()=>{
+    state.notesMode=!state.notesMode;
+    notesBadge.textContent=`✎ Notes：${state.notesMode?'ON':'OFF'}`;
+    showToast(state.notesMode?'Notes ON':'Notes OFF');
+  };
+  document.getElementById('checkBtn').onclick=checkErrors;
+  document.getElementById('hintBtn').onclick=hint;
+  document.getElementById('undoBtn').onclick=undo;
+  document.getElementById('resetBtn').onclick=resetBoard;
+  document.getElementById('solveBtn').onclick=solveAll;
+  document.getElementById('newBtn').onclick=()=>{
+    const choice=prompt('選擇難度：Easy / Medium / Hard / Insane',state.difficulty);
+    if(!choice)return;
+    const d=choice.trim();
+    if(['Easy','Medium','Hard','Insane'].includes(d))newGame(d);
+    else showToast('請輸入有效難度');
+  };
+  window.addEventListener('keydown',(e)=>{
+    if(e.key>='1'&&e.key<='9'){setNumber(parseInt(e.key));}
+    else if(e.key==='Backspace'||e.key==='Delete'){erase();}
+    else if(e.key==='n'||e.key==='N'){state.notesMode=!state.notesMode;notesBadge.textContent=`✎ Notes：${state.notesMode?'ON':'OFF'}`;}
+  });
+}
+buildPad();
+hookButtons();
+newGame('Medium');
+</script>
+</body>
+</html>
