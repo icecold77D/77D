@@ -20,9 +20,9 @@
     "title": "遊戲類",
     "items": [
       {
-        "name": "123456789",
-        "img": "123456789/title.jpg",
-        "href": "2023_05_07_curry/index.html",
+        "name": "sudoku_game",
+        "img": "sudoku_game/title.jpg",
+        "href": "sudoku_game/index.html",
         "date": "2025-09-06"
       }
     ]
