@@ -31,9 +31,13 @@
       background:var(--card); border:1px solid var(--border);
       border-radius:14px; overflow:hidden; text-decoration:none; color:inherit;
       scroll-snap-align:start; transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+      cursor:pointer;
     }
     .card:hover{transform:translateY(-3px); border-color:#3a3a45; box-shadow:0 10px 24px rgba(0,0,0,.35)}
-    .thumb{width:100%; display:block; aspect-ratio:16/9; object-fit:cover; background:#0f0f12}
+    .thumb{
+      width:100%; display:block; aspect-ratio:16/9; object-fit:cover; background:#0f0f12;
+      -webkit-user-drag:none; user-select:none; pointer-events:none;
+    }
     .cap{padding:8px 10px; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; border-top:1px solid var(--border)}
     .nav{
       position:absolute; top:50%; transform:translateY(-50%);
@@ -41,9 +45,11 @@
       background:rgba(21,21,24,.75); color:var(--fg); backdrop-filter:blur(6px);
       display:flex; align-items:center; justify-content:center; cursor:pointer; user-select:none;
       transition:background .15s ease, transform .15s ease;
+      z-index:5;
     }
     .nav:hover{background:rgba(40,40,48,.9)}
     .nav.left{left:-6px} .nav.right{right:-6px}
+    .nav[hidden]{display:none}
     .empty{color:var(--muted); padding:24px 8px}
     @media (max-width: 768px){
       :root{ --card-w: 180px; }
@@ -71,30 +77,93 @@
       return n;
     };
 
-    // 讓滑鼠滾輪可做水平捲動、拖曳可滑動
+    // 取得每次「跳一張卡片」需要的位移（卡片寬度 + gap）
+    function getStep(rail){
+      const card = rail.querySelector('.card');
+      if (!card) return rail.clientWidth; // 後備
+      const rect = card.getBoundingClientRect();
+      const gap = parseFloat(getComputedStyle(rail).gap || '0') || 0;
+      return rect.width + gap;
+    }
+
+    // 使滾輪為水平、支援拖曳、拖完吸附到最近卡片；點擊不被吃掉
     function enhanceRailScroll(rail){
+      // 滑鼠滾輪：垂直滾＝水平捲
       rail.addEventListener('wheel', (e) => {
         if (Math.abs(e.deltaX) < Math.abs(e.deltaY)) {
-          rail.scrollLeft += e.deltaY; // 垂直滾改為水平捲
+          rail.scrollLeft += e.deltaY;
           e.preventDefault();
+          scheduleSnap(); // 停止滾動後吸附
         }
       }, { passive:false });
 
-      let dragging = false, sx = 0, sl = 0;
+      let isDown = false, isDragging = false;
+      let startX = 0, startScrollLeft = 0;
+      const DRAG_THRESHOLD = 5;
+
       rail.addEventListener('pointerdown', (e) => {
-        dragging = true; sx = e.clientX; sl = rail.scrollLeft;
-        rail.setPointerCapture(e.pointerId);
-        rail.style.cursor = 'grabbing';
+        isDown = true;
+        isDragging = false;
+        startX = e.clientX;
+        startScrollLeft = rail.scrollLeft;
       });
+
       rail.addEventListener('pointermove', (e) => {
-        if (!dragging) return;
-        rail.scrollLeft = sl - (e.clientX - sx);
+        if (!isDown) return;
+        const dx = e.clientX - startX;
+        if (!isDragging && Math.abs(dx) > DRAG_THRESHOLD) {
+          isDragging = true;
+          rail.setPointerCapture(e.pointerId);
+          rail.style.cursor = 'grabbing';
+        }
+        if (isDragging) {
+          rail.scrollLeft = startScrollLeft - dx;
+        }
       });
-      ['pointerup','pointercancel','pointerleave'].forEach(evt=>{
-        rail.addEventListener(evt, () => { dragging=false; rail.style.cursor=''; });
+
+      function endDrag(e){
+        if (!isDown) return;
+        isDown = false;
+        rail.style.cursor = '';
+        try { rail.releasePointerCapture(e.pointerId); } catch {}
+        if (isDragging) {
+          // 吃掉隨後可能觸發的 click
+          const blocker = (ev) => { ev.stopPropagation(); ev.preventDefault(); rail.removeEventListener('click', blocker, true); };
+          rail.addEventListener('click', blocker, true);
+          snapToNearest();
+        }
+        isDragging = false;
+      }
+      rail.addEventListener('pointerup', endDrag);
+      rail.addEventListener('pointercancel', endDrag);
+      rail.addEventListener('pointerleave', endDrag);
+
+      // 鍵盤：左右鍵每次跳一張（讓 rail 可聚焦）
+      rail.tabIndex = 0;
+      rail.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft'){
+          e.preventDefault();
+          const step = getStep(rail);
+          const dir = e.key === 'ArrowRight' ? 1 : -1;
+          rail.scrollBy({ left: dir * step, behavior: 'smooth' });
+          scheduleSnap();
+        }
       });
+
+      // 停一小段時間就吸附到最近卡片
+      let snapTimer = null;
+      function scheduleSnap(){
+        clearTimeout(snapTimer);
+        snapTimer = setTimeout(snapToNearest, 120);
+      }
+      function snapToNearest(){
+        const step = Math.max(1, getStep(rail));
+        const target = Math.round(rail.scrollLeft / step) * step;
+        rail.scrollTo({ left: target, behavior: 'smooth' });
+      }
     }
 
+    // 建立一行（分類）
     function makeRow(section){
       // section: { title, items: [ {name,img,href,date?} ] }
       const container = el('section');
@@ -108,21 +177,22 @@
         return container;
       }
 
-      // 依 date 由新到舊排（若無 date 則維持原樣）
+      // 依 date 新→舊
       const items = [...section.items];
       items.sort((a,b)=>{
         const da = Date.parse(a.date || '') || 0;
         const db = Date.parse(b.date || '') || 0;
-        return db - da; // 新→舊
+        return db - da;
       });
 
       const railWrap = el('div', 'rail-wrap');
       const rail = el('div', 'rail');
+
       items.forEach(it=>{
         const a = el('a', 'card');
         a.href = it.href;
         a.innerHTML = `
-          <img class="thumb" src="${it.img}" alt="${it.name || ''}">
+          <img class="thumb" src="${it.img}" alt="${it.name || ''}" loading="lazy">
           <div class="cap">${it.name || ''}</div>
         `;
         rail.appendChild(a);
@@ -131,11 +201,25 @@
 
       const navL = el('div', 'nav left', '‹');
       const navR = el('div', 'nav right', '›');
-      const jump = () => Math.max(rail.clientWidth * 0.9, 320);
-      navL.addEventListener('click', ()=> rail.scrollBy({ left: -jump(), behavior:'smooth' }));
-      navR.addEventListener('click', ()=> rail.scrollBy({ left:  jump(), behavior:'smooth' }));
       railWrap.appendChild(navL);
       railWrap.appendChild(navR);
+
+      // 每次按鈕點擊：精準跳一張
+      const jumpOne = (dir) => {
+        const step = getStep(rail);
+        rail.scrollBy({ left: dir * step, behavior:'smooth' });
+      };
+      navL.addEventListener('click', ()=> jumpOne(-1));
+      navR.addEventListener('click', ()=> jumpOne(1));
+
+      // 只有超出寬度時才顯示箭頭
+      const toggleNav = () => {
+        const overflow = rail.scrollWidth > rail.clientWidth + 4;
+        navL.hidden = navR.hidden = !overflow;
+      };
+      const ro = new ResizeObserver(toggleNav);
+      ro.observe(rail);
+      toggleNav();
 
       enhanceRailScroll(rail);
       container.appendChild(railWrap);
@@ -151,8 +235,7 @@
         if (!r.ok) throw new Error('HTTP ' + r.status);
         const data = await r.json();
 
-        // data 預期是一個「已照你想要順序排好的陣列」。
-        // 例如：[{title:"冒險類", items:[...]}, {title:"美食類", items:[...]}]
+        // 期望 data 為：[{title:"美食類", items:[{name,img,href,date}, ...]}, ...]
         if (!Array.isArray(data) || data.length === 0){
           app.innerHTML = '<p class="muted">目前沒有任何分類</p>';
           return;
