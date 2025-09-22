@@ -2,61 +2,66 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <title>踩地雷 Minesweeper</title>
 <style>
   :root{
-    /* 淺灰棋盤 */
-    --tile:#d7dbe2;
-    --tile-open:#f3f5f8;
-    --tile-border:#8a919d;
-    --tile-size:34px;      /* 會由 JS 覆寫 */
-    --board-side:520px;    /* JS 會把棋盤外框改為正方形 */
+    /* 顏色與尺寸變數（JS 會覆寫 --tile-size 與 --board-side） */
+    --tile:#d7dbe2;           /* 淺灰背景（未開） */
+    --tile-open:#f3f5f8;      /* 開啟後更亮 */
+    --tile-border:#8a919d;    /* 深灰邊框 */
+    --tile-size:34px;         /* 單格邊長 */
+    --board-side:520px;       /* 棋盤外框邊長（正方形） */
+    --ink:#0f1720;
+    --ink-muted:#5b677a;
+    --bg:#0c1424;
+    --panel:#fafafa;
+    --panel-border:#d9dde6;
     --accent:#0ea5a3;
   }
   *{box-sizing:border-box}
-  html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial;background:#0c1424;color:#0f1720}
+  html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial}
 
-  .container{max-width:980px;margin:18px auto;padding:14px}
+  .container{max-width:980px;margin:16px auto;padding:12px}
 
-  header{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:10px}
+  header{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
   h1{margin:0;font-size:22px;color:#e6f1ff}
-  .brand-sub{color:#9fb2c8;font-size:13px}
 
-  /* 行1：難度 + 重置 + 狀態 */
-  .bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:10px 0 8px}
-  .badge{padding:6px 10px;border-radius:10px;background:#e5e7eb;border:1px solid #cbd5e1;min-width:80px;text-align:center}
+  /* 第一排：難度 + 重置 + 剩餘 + 時間 */
+  .bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0 8px}
+  .bar label{font-weight:700;color:#e6f1ff}
+  .badge{padding:6px 10px;border-radius:10px;background:#e5e7eb;border:1px solid #cbd5e1;min-width:78px;text-align:center}
   select,input,button{
-    background:#fff;border:1px solid #cbd5e1;color:#0f1720;padding:8px 10px;border-radius:10px
+    background:#fff;border:1px solid #cbd5e1;color:var(--ink);padding:8px 10px;border-radius:10px
   }
   button{background:#0e344b;color:#fff;border-color:#0e344b;cursor:pointer}
   button:hover{filter:brightness(1.07)}
 
-  /* 行2：行/列/地雷 同排，皆有標籤文字 */
-  .triplet{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:6px 0 14px}
-  .triplet .field{display:flex;gap:6px;align-items:center}
-  .triplet label{font-weight:600;color:#e6f1ff}
-  .triplet input{width:90px}
+  /* 第二排：行/列/地雷（同排） */
+  .triplet{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:6px 0 12px}
+  .field{display:flex;gap:6px;align-items:center}
+  .field label{font-weight:700;color:#e6f1ff}
+  .field input{width:92px}
 
-  /* 棋盤外框：置中＋正方形 */
+  /* 棋盤外框：置中 + 正方形 + 內距 */
   .board-shell{
-    margin:0 auto;
-    width:var(--board-side);
-    height:var(--board-side);
-    background:#fafafa;border:1px solid #d9dde6;border-radius:14px;padding:10px;
-    display:flex;align-items:center;justify-content:center;
+    margin:0 auto; width:var(--board-side); height:var(--board-side);
+    background:var(--panel); border:1px solid var(--panel-border); border-radius:14px; padding:10px;
+    display:flex; align-items:center; justify-content:center;
   }
   .board{display:grid}
 
+  /* 方塊樣式（淺灰、邊框清楚） */
   .tile{
     width:var(--tile-size); height:var(--tile-size);
-    display:flex;align-items:center;justify-content:center;margin:2px;
-    border-radius:6px;background:var(--tile);border:1px solid var(--tile-border);
-    font-weight:700;color:#111827;font-size:14px;user-select:none;cursor:pointer;
+    display:flex; align-items:center; justify-content:center; margin:2px;
+    border-radius:8px; background:var(--tile); border:1px solid var(--tile-border);
+    font-weight:800; color:#111827; font-size:14px; user-select:none; cursor:pointer;
     box-shadow:inset 0 1px 0 rgba(255,255,255,.55);
+    touch-action:manipulation;
   }
-  .tile.open{background:var(--tile-open);border-color:#a3a9b3;color:#0f1720}
-  .tile.flag{color:#0ea5a3}
+  .tile.open{background:var(--tile-open);border-color:#a3a9b3;color:var(--ink)}
+  .tile.flag{color:var(--accent)}
   .tile.mine{color:#b91c1c;background:#f2b1b1;border-color:#9f1b1b}
   .tile.number-1{color:#1d4ed8}
   .tile.number-2{color:#15803d}
@@ -67,35 +72,31 @@
   .tile.number-7{color:#78350f}
   .tile.number-8{color:#374151}
 
-  /* 最底下的玩法說明 */
+  /* 最底下的玩法說明（可收合） */
   details.guide{background:#0f1a30;border:1px solid #1e2a44;border-radius:12px;padding:10px 12px;margin:14px 0}
-  details.guide summary{cursor:pointer;color:#e6f1ff;font-weight:700}
+  details.guide summary{cursor:pointer;color:#e6f1ff;font-weight:800}
   .guide-body{margin-top:6px;color:#c8d4e3;line-height:1.7}
   .kbd{display:inline-block;padding:2px 6px;border:1px solid #cbd5e1;border-radius:6px;background:#f8fafc;color:#111827;font-size:12px}
 
-  /* 小螢幕微調 */
   @media (max-width:640px){
-    .triplet input{width:78px}
+    .field input{width:84px}
   }
 </style>
 </head>
 <body>
 <div class="container">
   <header>
-    <div>
-      <h2>踩地雷 · Minesweeper — 祝你手氣好 🍀</h2>
-      <div class="brand-sub">第一步永遠安全；贏了請跟我炫耀一下 😆</div>
-    </div>
+    <h1>踩地雷 · Minesweeper — 祝你手氣好 🍀</h1>
   </header>
 
-  <!-- 行1：難度 + 重置 + 狀態 -->
+  <!-- 第一排 -->
   <div class="bar">
-    <label style="color:#e6f1ff;font-weight:700">難易度
+    <label for="preset">難易度
       <select id="preset">
         <option value="9x9x10">簡單 9×9 · 10</option>
-        <option value="16x16x40">中等 12×12 · 30</option>
-        <option value="16x30x99">困難 20×20 · 99</option>
-        <option value="8x12x12">休閒 8×8 · 5</option>
+        <option value="16x16x40">中等 16×16 · 40</option>
+        <option value="16x30x99">困難 16×30 · 99</option>
+        <option value="8x12x12">休閒 8×12 · 12</option>
       </select>
     </label>
     <button id="resetBtn">重置</button>
@@ -103,27 +104,27 @@
     <div class="badge">時間：<span id="timer">0</span>s</div>
   </div>
 
-  <!-- 行2：行/列/地雷 -->
+  <!-- 第二排 -->
   <div class="triplet">
-    <div class="field"><label for="rows">行</label><input id="rows" type="number" value="9" min="5" max="20"></div>
-    <div class="field"><label for="cols">列</label><input id="cols" type="number" value="9" min="5" max="20"></div>
+    <div class="field"><label for="rows">行</label><input id="rows" type="number" value="9" min="5" max="60"></div>
+    <div class="field"><label for="cols">列</label><input id="cols" type="number" value="9" min="5" max="80"></div>
     <div class="field"><label for="mines">地雷</label><input id="mines" type="number" value="10" min="1"></div>
   </div>
 
-  <!-- 正方形棋盤外框（JS 會計算邊長）-->
+  <!-- 正方形棋盤 -->
   <div class="board-shell">
     <div id="board" class="board" aria-label="Minesweeper board"></div>
   </div>
 
-  <!-- 玩法說明：最底下，可收合 -->
+  <!-- 最底下：玩法說明 -->
   <details class="guide">
     <summary>玩法說明 / 操作提示（點我展開/收合）</summary>
     <div class="guide-body">
       <p><strong>電腦版：</strong> 左鍵開格；右鍵插旗；<span class="kbd">F</span> 插旗；<span class="kbd">Space</span> 開格；方向鍵移動焦點。</p>
-      <p><strong>手機版：</strong> 輕點開格；按住 <span class="kbd">Alt</span> + 點擊可插旗（若你的瀏覽器支援右鍵/長按，也可使用）。</p>
+      <p><strong>手機版：</strong> 輕點開格；<em>長按 350ms</em> 插旗；或按住 <span class="kbd">Alt</span> + 點擊。</p>
       <ul>
         <li>第一次點擊後才會放地雷，保證安全。</li>
-        <li>數字代表周圍 8 格的地雷數；揭開所有非地雷格即勝利。</li>
+        <li>數字為周圍 8 格的地雷數；揭開所有非地雷格即勝利。</li>
       </ul>
     </div>
   </details>
@@ -140,47 +141,48 @@
   const resetBtn = document.getElementById('resetBtn');
   const mineCountEl = document.getElementById('mineCount');
   const timerEl  = document.getElementById('timer');
+  const containerEl = document.querySelector('.container');
   const shellEl  = document.querySelector('.board-shell');
 
   // 狀態
   let rows=9, cols=9, totalMines=10;
   let grid=[]; let firstClick=true; let timer=null; let elapsed=0; let flagsPlaced=0; let gameOver=false; let cellsToReveal=0;
 
-  // 工具
-  const idx = (r,c)=> r*cols+c;
+  const idx = (r,c)=> r*cols + c;
   const inBounds = (r,c)=> r>=0 && r<rows && c>=0 && c<cols;
 
-  // === 版面計算：把棋盤維持正方形並置中，格子大小自動縮放 ===
+  // ===== 版面：正方形棋盤＋自適應格子大小 =====
   function layoutBoardSquare(){
-    // 可用寬度：容器寬度（-外框內距）
-    const containerWidth = document.querySelector('.container').clientWidth;
-    const shellPadding = 20; // board-shell padding: 10*2
-    const usableWidth = containerWidth - 0; // shell 會自己算
+    // 1) 計算可用寬度（容器寬度）
+    const maxWidth = containerEl.clientWidth;
+    // 2) 計算可用高度（視窗高度扣掉上方元素與底部說明的安全餘量）
+    const safeTop = document.querySelector('header').offsetHeight
+                  + document.querySelector('.bar').offsetHeight
+                  + document.querySelector('.triplet').offsetHeight
+                  + 28; // 緩衝
+    const safeBottom = 170; // 留給玩法說明與底部邊距
+    const maxHeight = Math.max(260, window.innerHeight - safeTop - safeBottom);
 
-    // 可用高度：視窗高度扣掉「容器上方到棋盤上緣」的距離，再留一點空間給說明/底部
-    const rectTopToShellTop = document.querySelector('.container').getBoundingClientRect().top
-      + document.querySelector('header').offsetHeight
-      + document.querySelector('.bar').offsetHeight
-      + document.querySelector('.triplet').offsetHeight
-      + 28; // 額外緩衝
-
-    const usableHeight = Math.max(260, window.innerHeight - rectTopToShellTop - 160); // 底部留出說明空間
-
-    const side = Math.floor(Math.min(usableWidth, usableHeight));
+    // 3) 棋盤外框邊長＝min(寬, 高)
+    const side = Math.floor(Math.min(maxWidth, maxHeight));
     document.documentElement.style.setProperty('--board-side', side + 'px');
 
-    // 依 side 與 cols 設定 tile 尺寸（含每格 margin 2px）
-    const gaps = cols * 4; // 左右 margin 2+2
-    let size = Math.floor((side - shellPadding - gaps) / cols);
-    size = Math.max(20, Math.min(size, 48));  // 限制範圍，避免太小/太大
+    // 4) 依外框邊長推算「可分配給格子」的內部邊長
+    // shell padding: 10px * 2；每格左右 margin: 2px；邊框 1px 在外層，無需扣
+    const inner = side - 20;           // 去掉 padding
+    const totalGaps = cols * 4;        // 每格 2px 左 + 2px 右
+    let size = Math.floor((inner - totalGaps) / cols);
+
+    // 防呆範圍（太大容易捲動、太小難點擊）
+    size = Math.max(20, Math.min(size, 54));
     document.documentElement.style.setProperty('--tile-size', size + 'px');
 
-    // 更新 grid 模板
+    // 更新 CSS Grid
     boardEl.style.gridTemplateColumns = `repeat(${cols}, var(--tile-size))`;
     boardEl.style.gridTemplateRows    = `repeat(${rows}, var(--tile-size))`;
   }
 
-  // === 棋盤資料 ===
+  // ===== 棋盤資料 =====
   function createGrid(){
     grid = new Array(rows*cols);
     for(let r=0;r<rows;r++){
@@ -205,7 +207,7 @@
       const cell = grid[pos];
       if(!cell.mine){ cell.mine=true; placed++; }
     }
-    // 計算鄰雷數
+    // 鄰雷數
     for(let r=0;r<rows;r++){
       for(let c=0;c<cols;c++){
         const cell = grid[idx(r,c)];
@@ -227,37 +229,58 @@
     boardEl.innerHTML='';
     for(let r=0;r<rows;r++){
       for(let c=0;c<cols;c++){
-        const cell=grid[idx(r,c)];
-        const el=document.createElement('div');
+        const cell = grid[idx(r,c)];
+        const el = document.createElement('div');
         el.className='tile';
         el.dataset.r=r; el.dataset.c=c;
-        el.addEventListener('click', ev=>handleLeftClick(ev,cell));
-        el.addEventListener('contextmenu', ev=>handleRightClick(ev,cell));
-        el.addEventListener('auxclick', ev=>{ if(ev.button===1) handleRightClick(ev,cell); });
-        cell.el=el;
+        // 滑鼠
+        el.addEventListener('click', ev => handleLeftClick(ev,cell));
+        el.addEventListener('contextmenu', ev => handleRightClick(ev,cell));
+        el.addEventListener('auxclick', ev => { if(ev.button===1) handleRightClick(ev,cell); });
+        // 手機長按插旗（350ms）
+        let tId=null, pressed=false;
+        el.addEventListener('touchstart', ev=>{
+          pressed=true;
+          tId=setTimeout(()=>{ if(pressed && !cell.open) toggleFlag(cell); }, 350);
+        }, {passive:true});
+        el.addEventListener('touchend', ev=>{
+          if(tId) clearTimeout(tId);
+          pressed=false;
+        });
+        el.addEventListener('touchmove', ev=>{
+          // 移動就取消長按
+          if(tId) clearTimeout(tId);
+          pressed=false;
+        });
+
+        cell.el = el;
         boardEl.appendChild(el);
       }
     }
     layoutBoardSquare();
   }
 
-  // === 遊戲流程 ===
-  function startTimer(){ if(timer) clearInterval(timer); elapsed=0; timerEl.textContent='0'; timer=setInterval(()=>{elapsed++; timerEl.textContent=elapsed;},1000); }
+  // ===== 遊戲流程 =====
+  function startTimer(){ if(timer) clearInterval(timer); elapsed=0; timerEl.textContent='0';
+    timer=setInterval(()=>{ elapsed++; timerEl.textContent=elapsed; },1000); }
   function stopTimer(){ if(timer){ clearInterval(timer); timer=null; } }
 
   function revealCell(cell){
     if(cell.open || cell.flagged) return;
-    cell.open=true; cell.el.classList.add('open');
+    cell.open = true;
+    cell.el.classList.add('open');
     if(cell.mine){ cell.el.classList.add('mine'); cell.el.textContent='💣'; return; }
     cellsToReveal--;
-    if(cell.adj>0){ cell.el.classList.add('number-'+cell.adj); cell.el.textContent=cell.adj; }
-    else{
+    if(cell.adj>0){
+      cell.el.classList.add('number-'+cell.adj);
+      cell.el.textContent = cell.adj;
+    }else{
       for(let dr=-1;dr<=1;dr++){
         for(let dc=-1;dc<=1;dc++){
           if(dr===0&&dc===0) continue;
           const rr=cell.r+dr, cc=cell.c+dc;
           if(inBounds(rr,cc)){
-            const n=grid[idx(rr,cc)];
+            const n = grid[idx(rr,cc)];
             if(!n.open && !n.flagged && !n.mine) revealCell(n);
           }
         }
@@ -267,13 +290,17 @@
 
   function handleLeftClick(ev, cell){
     if(gameOver) return;
-    if(ev.altKey) return toggleFlag(cell);
+    if(ev && ev.altKey) return toggleFlag(cell); // 桌機 Alt+點擊插旗
     if(firstClick){ placeMinesAvoiding(cell.r, cell.c); startTimer(); firstClick=false; }
     if(cell.flagged || cell.open) return;
     if(cell.mine){ revealAllMines(cell); return endGame(false); }
     revealCell(cell); checkWin();
   }
-  function handleRightClick(ev, cell){ ev.preventDefault(); if(gameOver||cell.open) return; toggleFlag(cell); }
+  function handleRightClick(ev, cell){
+    ev.preventDefault();
+    if(gameOver || cell.open) return;
+    toggleFlag(cell);
+  }
 
   function toggleFlag(cell){
     if(cell.open) return;
@@ -305,8 +332,8 @@
   }
 
   function endGame(won){
-    gameOver=true; stopTimer();
-    setTimeout(()=> alert(won ? `你贏了！用時 ${elapsed} 秒 🎉` : '你踩到地雷了 💥 遊戲結束'), 40);
+    gameOver = true; stopTimer();
+    setTimeout(()=> alert(won ? `你贏了！用時 ${elapsed} 秒 🎉` : '你踩到地雷了 💥 遊戲結束'), 50);
   }
 
   function updateMineCount(){ mineCountEl.textContent = Math.max(0, totalMines - flagsPlaced); }
@@ -325,15 +352,16 @@
     timerEl.textContent='0'; mineCountEl.textContent=totalMines;
     cellsToReveal = rows*cols - totalMines;
 
-    createGrid(); buildBoard();  // 會一起算排版與 tile 尺寸
+    createGrid(); buildBoard();
   }
 
-  // 事件：難度/輸入變更/重置/視窗尺寸改變
+  // 事件：難度/輸入/重置/尺寸
   presetEl.addEventListener('change', ()=>{
     const v = presetEl.value.split('x').map(Number);
     if(v.length===3){ rowsEl.value=v[0]; colsEl.value=v[1]; minesEl.value=v[2]; resetGame(); }
   });
   [rowsEl, colsEl, minesEl].forEach(el => el.addEventListener('change', ()=>{ presetEl.value=''; resetGame(); }));
+
   resetBtn.addEventListener('click', resetGame);
   window.addEventListener('resize', layoutBoardSquare);
   window.addEventListener('orientationchange', layoutBoardSquare);
@@ -341,7 +369,7 @@
   // 初始化
   resetGame();
 
-  // debug
+  // 外部診斷
   window._ms = { layoutBoardSquare, resetGame };
 })();
 </script>
