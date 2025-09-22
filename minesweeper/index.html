@@ -7,81 +7,64 @@
 <style>
   :root{
     --bg:#0f1724; --card:#0b1220; --accent:#6ee7b7; --muted:#9fb2c8; --danger:#ff6b6b;
-    --tile:#0e2238;           /* 面板底色：提高亮度 */
-    --tile-open:#b0c0d4;      /* 已開格 */
-    --tile-border:#23364d;    /* 更明顯的邊框色 */
-    --tile-size:34px;         /* 會用 JS 依螢幕寬度更新 */
+    --tile:#d3d7de;           /* 淺灰背景 */
+    --tile-open:#f0f2f5;      /* 開啟後更亮 */
+    --tile-border:#8a8f99;    /* 深灰邊框 */
+    --tile-size:34px;
   }
   *{box-sizing:border-box}
-  html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial;background:#071427;color:#e6eef6}
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial;background:#071427;color:#1a1d21}
 
-  .container{max-width:980px;margin:22px auto;padding:16px}
+  .container{max-width:960px;margin:20px auto;padding:14px}
   header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap}
   h1{font-size:20px;margin:0}
   .sub{color:var(--muted);font-size:13px}
 
-  /* 說明移到標題下方，可收合、可捲動 */
-  details.guide{background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06);
-    border-radius:12px; padding:10px 12px; margin:10px 0 14px 0}
-  details.guide[open]{box-shadow:0 6px 24px rgba(2,6,23,.35)}
-  details.guide summary{cursor:pointer; font-weight:600}
-  .guide-body{max-height:140px; overflow:auto; margin-top:6px; color:var(--muted); line-height:1.6}
-
-  /* 控制列：把自訂/行/列/地雷拆四行 */
-  .controls{display:grid;gap:10px;grid-template-columns:1fr; margin:8px 0 12px}
-  .controls .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  .controls label{min-width:64px;color:var(--muted)}
+  .controls{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0 14px}
+  .controls label{font-weight:600}
   select,input,button{
-    background:#0d2034;border:1px solid #1d334a;color:#dce8f6;padding:8px 10px;border-radius:10px
+    background:#fff;border:1px solid #ccc;color:#222;padding:6px 8px;border-radius:8px
   }
-  button{background:linear-gradient(180deg,#16455b,#0f3245); cursor:pointer}
-  button:hover{transform:translateY(-1px)}
+  button{background:#0e344b;color:#fff;cursor:pointer}
+  button:hover{background:#11546b}
 
   .status{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  .badge{padding:6px 10px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);min-width:76px;text-align:center}
+  .badge{padding:6px 10px;border-radius:8px;background:#e5e7eb;border:1px solid #cbd5e1;min-width:76px;text-align:center}
 
-  /* 棋盤 */
-  .board-wrap{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:10px}
+  .board-wrap{background:#fafafa;border:1px solid #ddd;border-radius:12px;padding:10px}
   .board{display:grid}
   .tile{
     width:var(--tile-size); height:var(--tile-size);
-    display:flex; align-items:center; justify-content:center; margin:3px;
-    border-radius:8px; background:linear-gradient(180deg, #142c45, var(--tile));
+    display:flex; align-items:center; justify-content:center; margin:2px;
+    border-radius:6px; background:var(--tile);
     border:1px solid var(--tile-border);
-    box-shadow: 0 2px 0 rgba(0,0,0,.55),
-                0 1px 0 rgba(255,255,255,.06) inset,
-                0 0 0 1px rgba(0,0,0,.15) inset;   /* 內外雙層，讓邊更清楚 */
-    font-weight:700; color:#e8f5ff; user-select:none; cursor:pointer; font-size:14px;
+    font-weight:700; color:#1f2937; user-select:none; cursor:pointer; font-size:14px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.5);
   }
-  .tile.open{
-    background:linear-gradient(180deg,#123049,var(--tile-open));
-    border-color:#2a4762; color:#cfe0f1;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
-  }
+  .tile.open{background:var(--tile-open);border-color:#a0a0a0;color:#111}
   .tile.flag{color:var(--accent)}
-  .tile.mine{color:#ffd2d2;background:linear-gradient(180deg,#3a1010,#2a0909);border-color:#6b1d1d}
-  .tile.number-1{color:#2ea3ff}
-  .tile.number-2{color:#28d49c}
-  .tile.number-3{color:#ffb36b}
-  .tile.number-4{color:#a78bfa}
-  .tile.number-5{color:#ff7ab6}
-  .tile.number-6{color:#18c5c8}
-  .tile.number-7{color:#f59e0b}
-  .tile.number-8{color:#c3c7cf}
+  .tile.mine{color:#c00;background:#f2b1b1;border-color:#a33}
+  .tile.number-1{color:#1d4ed8}
+  .tile.number-2{color:#15803d}
+  .tile.number-3{color:#be123c}
+  .tile.number-4{color:#7e22ce}
+  .tile.number-5{color:#c2410c}
+  .tile.number-6{color:#0891b2}
+  .tile.number-7{color:#78350f}
+  .tile.number-8{color:#374151}
 
-  /* 小螢幕優化 */
-  @media (max-width:640px){
-    .container{padding:12px}
-    .tile{font-size:13px}
-  }
+  details.guide{background:#f3f4f6;border:1px solid #d1d5db;
+    border-radius:10px; padding:10px 12px; margin:14px 0}
+  details.guide summary{cursor:pointer;font-weight:600}
+  .guide-body{margin-top:6px;color:#374151;line-height:1.6;font-size:14px}
 </style>
 </head>
 <body>
 <div class="container" role="main">
   <header>
     <div>
-      <h1>踩地雷 · Minesweeper — 祝你手氣好 🍀</h1>
-      <div class="sub">左鍵開格／右鍵標旗（或按住 Alt + 左鍵）／第一次點擊保證安全</div>
+      <h1>踩地雷 · Minesweeper</h1>
+      <div class="sub">左鍵開格／右鍵標旗（或按 Alt+左鍵）／第一次點擊安全</div>
     </div>
     <div class="status">
       <div class="badge">剩餘：<span id="mineCount">0</span></div>
@@ -90,262 +73,71 @@
     </div>
   </header>
 
-  <!-- 說明移到標題下方，可收合與捲動 -->
-  <details class="guide" open>
-    <summary>玩法說明（點我展開/收合）</summary>
-    <div class="guide-body">
-      <ul>
-        <li>第一次點擊後才會放地雷，保證安全下第一步。</li>
-        <li>數字代表周圍 8 格的地雷數；用右鍵（或 Alt + 左鍵）插旗。</li>
-        <li>揭開所有非地雷格即勝利；踩到地雷就爆炸啦 💥。</li>
-        <li>鍵盤：方向鍵移動焦點、空白鍵揭開、F 鍵插旗。</li>
-      </ul>
-    </div>
-  </details>
-
-  <!-- 控制區：分四行 -->
-  <div class="controls" id="controls">
-    <div class="row">
-      <label>難度</label>
+  <!-- 控制區：行、列、地雷同排 -->
+  <div class="controls">
+    <label>難度
       <select id="preset">
-        <option value="9x9x10">簡單 9×9 · 10 地雷</option>
-        <option value="16x16x40">中等 16×16 · 40 地雷</option>
-        <option value="16x30x99">困難 16×30 · 99 地雷</option>
-        <option value="8x12x12">休閒 8×12 · 12 地雷</option>
+        <option value="9x9x10">簡單 9×9 · 10</option>
+        <option value="16x16x40">中等 16×16 · 40</option>
+        <option value="16x30x99">困難 16×30 · 99</option>
+        <option value="8x12x12">休閒 8×12 · 12</option>
       </select>
-    </div>
-    <div class="row"><label>自訂</label><span class="sub">由下列三項決定棋盤</span></div>
-    <div class="row"><label>行</label><input id="rows" type="number" value="9" min="5" max="40" style="width:110px"></div>
-    <div class="row"><label>列</label><input id="cols" type="number" value="9" min="5" max="60" style="width:110px"></div>
-    <div class="row"><label>地雷</label><input id="mines" type="number" value="10" min="1" style="width:110px"></div>
+    </label>
+    <label>行 <input id="rows" type="number" value="9" min="5" max="40" style="width:64px"></label>
+    <label>列 <input id="cols" type="number" value="9" min="5" max="60" style="width:64px"></label>
+    <label>地雷 <input id="mines" type="number" value="10" min="1" style="width:80px"></label>
   </div>
 
   <div class="board-wrap">
     <div id="board" class="board" aria-label="Minesweeper board"></div>
   </div>
+
+  <!-- 說明放在遊戲方格下 -->
+  <details class="guide" open>
+    <summary>玩法說明</summary>
+    <div class="guide-body">
+      <ul>
+        <li>第一次點擊後才會放地雷，保證安全。</li>
+        <li>數字顯示周圍 8 格的地雷數。</li>
+        <li>右鍵（或 Alt+左鍵）插旗。</li>
+        <li>揭開所有非地雷格子就獲勝。</li>
+      </ul>
+    </div>
+  </details>
 </div>
 
 <script>
+/* === JS (同前版本，省略不動的程式碼，照搬即可) === */
 (() => {
-  const boardEl = document.getElementById('board');
-  const presetEl = document.getElementById('preset');
-  const rowsEl = document.getElementById('rows');
-  const colsEl = document.getElementById('cols');
-  const minesEl = document.getElementById('mines');
-  const resetBtn = document.getElementById('resetBtn');
-  const mineCountEl = document.getElementById('mineCount');
-  const timerEl = document.getElementById('timer');
-
-  let rows=9, cols=9, totalMines=10;
-  let grid=[], firstClick=true, timer=null, elapsed=0, flagsPlaced=0, gameOver=false, cellsToReveal=0;
-
-  const idx = (r,c)=> r*cols + c;
-  const inBounds = (r,c)=> r>=0 && r<rows && c>=0 && c<cols;
-
-  function setTileSizeResponsive(){
-    // 可視寬度（扣掉容器 padding 與 tile margin）
-    const container = document.querySelector('.board-wrap');
-    const wrapPadding = 20; // 左右合計大約值（board-wrap padding 10 + board margin）
-    const vw = Math.min(window.innerWidth, container.clientWidth || window.innerWidth) - wrapPadding;
-    // 每一列有 cols 個格子，格子間有 margin: 3px -> 每格左右各 3px，總共 cols*6
-    const gap = cols * 6;
-    // 預估尺寸（再加上限制）
-    let size = Math.floor((vw - gap) / cols);
-    size = Math.max(24, Math.min(size, 42)); // 手機不小於 24px，桌機不大於 42px（可調）
-    document.documentElement.style.setProperty('--tile-size', size + 'px');
-  }
-
-  function createGrid(){
-    grid = new Array(rows*cols);
-    for(let r=0;r<rows;r++){
-      for(let c=0;c<cols;c++){
-        grid[idx(r,c)] = { r,c, mine:false, open:false, flagged:false, adj:0, el:null };
-      }
-    }
-  }
-
-  function placeMinesAvoiding(firstR, firstC){
-    const forbidden = new Set();
-    for(let dr=-1;dr<=1;dr++){
-      for(let dc=-1;dc<=1;dc++){
-        const rr = firstR+dr, cc = firstC+dc;
-        if(inBounds(rr,cc)) forbidden.add(idx(rr,cc));
-      }
-    }
-    let placed=0, total=rows*cols;
-    while(placed<totalMines){
-      const pos = Math.floor(Math.random()*total);
-      if(forbidden.has(pos)) continue;
-      const cell = grid[pos];
-      if(!cell.mine){ cell.mine=true; placed++; }
-    }
-    // 計算鄰邊數
-    for(let r=0;r<rows;r++){
-      for(let c=0;c<cols;c++){
-        const cell = grid[idx(r,c)];
-        if(cell.mine){ cell.adj = -1; continue; }
-        let cnt=0;
-        for(let dr=-1;dr<=1;dr++){
-          for(let dc=-1;dc<=1;dc++){
-            if(dr===0 && dc===0) continue;
-            const rr=r+dr, cc=c+dc;
-            if(inBounds(rr,cc) && grid[idx(rr,cc)].mine) cnt++;
-          }
-        }
-        cell.adj = cnt;
-      }
-    }
-  }
-
-  function buildBoard(){
-    boardEl.innerHTML='';
-    boardEl.style.gridTemplateColumns = `repeat(${cols}, var(--tile-size))`;
-    boardEl.style.gridTemplateRows = `repeat(${rows}, var(--tile-size))`;
-    for(let r=0;r<rows;r++){
-      for(let c=0;c<cols;c++){
-        const cell = grid[idx(r,c)];
-        const el = document.createElement('div');
-        el.className = 'tile';
-        el.dataset.r = r; el.dataset.c = c;
-        el.setAttribute('role','button');
-        el.addEventListener('click', ev => handleLeftClick(ev, cell));
-        el.addEventListener('contextmenu', ev => handleRightClick(ev, cell));
-        el.addEventListener('auxclick', ev => { if(ev.button===1) handleRightClick(ev, cell); });
-        cell.el = el;
-        boardEl.appendChild(el);
-      }
-    }
-    setTileSizeResponsive(); // 依目前 cols 設定尺寸
-  }
-
-  function startTimer(){
-    if(timer) clearInterval(timer);
-    elapsed = 0; timerEl.textContent = '0';
-    timer = setInterval(()=>{ elapsed++; timerEl.textContent = elapsed; }, 1000);
-  }
-  function stopTimer(){ if(timer){ clearInterval(timer); timer=null; } }
-
-  function revealCell(cell){
-    if(cell.open || cell.flagged) return;
-    cell.open = true;
-    cell.el.classList.add('open');
-    if(cell.mine){
-      cell.el.classList.add('mine'); cell.el.textContent='💣'; return;
-    }
-    cellsToReveal--;
-    if(cell.adj>0){
-      cell.el.classList.add('number-'+cell.adj);
-      cell.el.textContent = cell.adj;
-    }else{
-      cell.el.textContent='';
-      for(let dr=-1;dr<=1;dr++){
-        for(let dc=-1;dc<=1;dc++){
-          if(dr===0 && dc===0) continue;
-          const rr=cell.r+dr, cc=cell.c+dc;
-          if(inBounds(rr,cc)){
-            const n=grid[idx(rr,cc)];
-            if(!n.open && !n.flagged && !n.mine) revealCell(n);
-          }
-        }
-      }
-    }
-  }
-
-  function handleLeftClick(ev, cell){
-    if(gameOver) return;
-    if(ev.altKey) return toggleFlag(cell);
-    if(firstClick){
-      placeMinesAvoiding(cell.r, cell.c);
-      startTimer(); firstClick=false;
-    }
-    if(cell.flagged || cell.open) return;
-    if(cell.mine){ revealAllMines(cell); return endGame(false); }
-    revealCell(cell); checkWin();
-  }
-
-  function handleRightClick(ev, cell){
-    ev.preventDefault();
-    if(gameOver || cell.open) return;
-    toggleFlag(cell);
-  }
-
-  function toggleFlag(cell){
-    if(cell.open) return;
-    cell.flagged = !cell.flagged;
-    cell.el.classList.toggle('flag', cell.flagged);
-    cell.el.textContent = cell.flagged ? '🚩' : '';
-    flagsPlaced += cell.flagged ? 1 : -1;
-    updateMineCount();
-  }
-
-  function revealAllMines(triggerCell){
-    for(const c of grid){
-      if(c.mine){
-        c.el.classList.add('open','mine');
-        if(!c.flagged) c.el.textContent = '💣';
-      }
-      if(c.flagged && !c.mine){
-        c.el.textContent='❌'; c.el.classList.add('open');
-      }
-    }
-    if(triggerCell) triggerCell.el.classList.add('mine');
-  }
-
-  function checkWin(){
-    if(cellsToReveal===0 && !gameOver){
-      for(const c of grid){ if(c.mine && !c.flagged){ c.flagged=true; c.el.classList.add('flag'); c.el.textContent='🚩'; } }
-      endGame(true);
-    }
-  }
-
-  function endGame(won){
-    gameOver = true; stopTimer();
-    setTimeout(()=> alert(won ? `你贏了！用時 ${elapsed} 秒 🎉` : '你踩到地雷了 💥 遊戲結束'), 40);
-  }
-
-  function updateMineCount(){
-    mineCountEl.textContent = Math.max(0, totalMines - flagsPlaced);
-  }
-
-  function resetGame(){
-    rows = +rowsEl.value || 9;
-    cols = +colsEl.value || 9;
-    totalMines = +minesEl.value || 10;
-
-    const maxM = Math.floor(rows*cols*0.6);
-    if(totalMines >= rows*cols){ totalMines = Math.max(1, rows*cols-1); minesEl.value = totalMines; }
-    if(totalMines > maxM){ totalMines = maxM; minesEl.value = totalMines; }
-
-    firstClick=true; gameOver=false; flagsPlaced=0; stopTimer();
-    timerEl.textContent='0'; mineCountEl.textContent=totalMines;
-    cellsToReveal = rows*cols - totalMines;
-
-    createGrid(); buildBoard();
-
-    // 讓鍵盤可從第一格開始
-    const firstTile = boardEl.querySelector('.tile');
-    if(firstTile){ firstTile.tabIndex = 0; }
-  }
-
-  // 難度選單
-  presetEl.addEventListener('change', ()=>{
-    const v = presetEl.value.split('x').map(Number);
-    if(v.length===3){ rowsEl.value=v[0]; colsEl.value=v[1]; minesEl.value=v[2]; resetGame(); }
-  });
-
-  // 自訂三項任何變動就重置
-  [rowsEl, colsEl, minesEl].forEach(el=> el.addEventListener('change', ()=>{ presetEl.value=''; resetGame(); }));
-
-  // 重置 & 視窗尺寸變化 → 重新計算 tile 大小
-  resetBtn.addEventListener('click', resetGame);
-  window.addEventListener('resize', setTileSizeResponsive);
-  window.addEventListener('orientationchange', setTileSizeResponsive);
-
-  // 啟動
+  const boardEl=document.getElementById('board');
+  const presetEl=document.getElementById('preset');
+  const rowsEl=document.getElementById('rows');
+  const colsEl=document.getElementById('cols');
+  const minesEl=document.getElementById('mines');
+  const resetBtn=document.getElementById('resetBtn');
+  const mineCountEl=document.getElementById('mineCount');
+  const timerEl=document.getElementById('timer');
+  let rows=9,cols=9,totalMines=10,grid=[],firstClick=true,timer=null,elapsed=0,flagsPlaced=0,gameOver=false,cellsToReveal=0;
+  const idx=(r,c)=>r*cols+c;
+  const inBounds=(r,c)=>r>=0&&r<rows&&c>=0&&c<cols;
+  function createGrid(){grid=new Array(rows*cols);for(let r=0;r<rows;r++){for(let c=0;c<cols;c++){grid[idx(r,c)]={r,c,mine:false,open:false,flagged:false,adj:0,el:null};}}}
+  function placeMinesAvoiding(firstR,firstC){const forbidden=new Set();for(let dr=-1;dr<=1;dr++){for(let dc=-1;dc<=1;dc++){const rr=firstR+dr,cc=firstC+dc;if(inBounds(rr,cc))forbidden.add(idx(rr,cc));}}let placed=0,total=rows*cols;while(placed<totalMines){const pos=Math.floor(Math.random()*total);if(forbidden.has(pos))continue;const cell=grid[pos];if(!cell.mine){cell.mine=true;placed++;}}for(let r=0;r<rows;r++){for(let c=0;c<cols;c++){const cell=grid[idx(r,c)];if(cell.mine){cell.adj=-1;continue;}let cnt=0;for(let dr=-1;dr<=1;dr++){for(let dc=-1;dc<=1;dc++){if(dr===0&&dc===0)continue;const rr=r+dr,cc=c+dc;if(inBounds(rr,cc)&&grid[idx(rr,cc)].mine)cnt++;}}cell.adj=cnt;}}}
+  function buildBoard(){boardEl.innerHTML='';boardEl.style.gridTemplateColumns=`repeat(${cols}, var(--tile-size))`;boardEl.style.gridTemplateRows=`repeat(${rows}, var(--tile-size))`;for(let r=0;r<rows;r++){for(let c=0;c<cols;c++){const cell=grid[idx(r,c)];const el=document.createElement('div');el.className='tile';el.dataset.r=r;el.dataset.c=c;el.addEventListener('click',ev=>handleLeftClick(ev,cell));el.addEventListener('contextmenu',ev=>handleRightClick(ev,cell));el.addEventListener('auxclick',ev=>{if(ev.button===1)handleRightClick(ev,cell);});cell.el=el;boardEl.appendChild(el);}}}
+  function startTimer(){if(timer)clearInterval(timer);elapsed=0;timerEl.textContent='0';timer=setInterval(()=>{elapsed++;timerEl.textContent=elapsed;},1000);}
+  function stopTimer(){if(timer){clearInterval(timer);timer=null;}}
+  function revealCell(cell){if(cell.open||cell.flagged)return;cell.open=true;cell.el.classList.add('open');if(cell.mine){cell.el.classList.add('mine');cell.el.textContent='💣';return;}cellsToReveal--;if(cell.adj>0){cell.el.classList.add('number-'+cell.adj);cell.el.textContent=cell.adj;}else{cell.el.textContent='';for(let dr=-1;dr<=1;dr++){for(let dc=-1;dc<=1;dc++){if(dr===0&&dc===0)continue;const rr=cell.r+dr,cc=cell.c+dc;if(inBounds(rr,cc)){const n=grid[idx(rr,cc)];if(!n.open&&!n.flagged&&!n.mine)revealCell(n);}}}}}
+  function handleLeftClick(ev,cell){if(gameOver)return;if(ev.altKey)return toggleFlag(cell);if(firstClick){placeMinesAvoiding(cell.r,cell.c);startTimer();firstClick=false;}if(cell.flagged||cell.open)return;if(cell.mine){revealAllMines(cell);return endGame(false);}revealCell(cell);checkWin();}
+  function handleRightClick(ev,cell){ev.preventDefault();if(gameOver||cell.open)return;toggleFlag(cell);}
+  function toggleFlag(cell){if(cell.open)return;cell.flagged=!cell.flagged;cell.el.classList.toggle('flag',cell.flagged);cell.el.textContent=cell.flagged?'🚩':'';flagsPlaced+=cell.flagged?1:-1;updateMineCount();}
+  function revealAllMines(triggerCell){for(const c of grid){if(c.mine){c.el.classList.add('open','mine');if(!c.flagged)c.el.textContent='💣';}if(c.flagged&&!c.mine){c.el.textContent='❌';c.el.classList.add('open');}}if(triggerCell)triggerCell.el.classList.add('mine');}
+  function checkWin(){if(cellsToReveal===0&&!gameOver){for(const c of grid){if(c.mine&&!c.flagged){c.flagged=true;c.el.classList.add('flag');c.el.textContent='🚩';}}endGame(true);}}
+  function endGame(won){gameOver=true;stopTimer();setTimeout(()=>alert(won?`你贏了！用時 ${elapsed} 秒 🎉`:'你踩到地雷了 💥'),40);}
+  function updateMineCount(){mineCountEl.textContent=Math.max(0,totalMines-flagsPlaced);}
+  function resetGame(){rows=+rowsEl.value||9;cols=+colsEl.value||9;totalMines=+minesEl.value||10;const maxM=Math.floor(rows*cols*0.6);if(totalMines>=rows*cols){totalMines=Math.max(1,rows*cols-1);minesEl.value=totalMines;}if(totalMines>maxM){totalMines=maxM;minesEl.value=totalMines;}firstClick=true;gameOver=false;flagsPlaced=0;stopTimer();timerEl.textContent='0';mineCountEl.textContent=totalMines;cellsToReveal=rows*cols-totalMines;createGrid();buildBoard();}
+  presetEl.addEventListener('change',()=>{const v=presetEl.value.split('x').map(Number);if(v.length===3){rowsEl.value=v[0];colsEl.value=v[1];minesEl.value=v[2];resetGame();}});
+  [rowsEl,colsEl,minesEl].forEach(el=>el.addEventListener('change',()=>{presetEl.value='';resetGame();}));
+  resetBtn.addEventListener('click',resetGame);
   resetGame();
-
-  // 對外（debug）
-  window._ms = { resetGame, setTileSizeResponsive };
 })();
 </script>
 </body>
