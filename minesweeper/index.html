@@ -45,17 +45,18 @@
   button{background:#0e344b;color:#fff;border-color:#0e344b;cursor:pointer}
   button:hover{filter:brightness(1.07)}
 
-  /* 狀態徽章：縮小版 */
+  /* 狀態徽章：稍微放大 */
   .badge{
-    font-size:13px; padding:4px 8px; border-radius:8px;
-    background:#e5e7eb;border:1px solid #cbd5e1;min-width:66px;text-align:center
+    font-size:14px; padding:6px 10px; border-radius:8px;
+    background:#e5e7eb;border:1px solid #cbd5e1;min-width:80px;text-align:center
   }
-
-  /* 第二排：行／列／地雷 + 重置（單行、不換行、可橫向捲動） */
+  
+  /* 第二排：置中排列 */
   .triplet{
-    display:flex; gap:12px; align-items:center; margin:8px 0 12px;
-    flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:thin;
+    display:flex; gap:12px; align-items:center; justify-content:center;
+    margin:8px 0 12px; flex-wrap:wrap;
   }
+  .triplet .field input{ width:6ch; min-width:52px }
   .triplet > *{flex:0 0 auto}
   .field{display:flex;gap:6px;align-items:center}
   .field label{font-weight:700;color:#e6f1ff}
