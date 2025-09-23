@@ -31,10 +31,15 @@
   button:hover{filter:brightness(1.07)}
 
   /* 第二排：行/列/地雷 */
-  .triplet{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:8px 0 12px}
+  .triplet{
+  display:flex; gap:12px; align-items:center;
+  flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:thin;
+  }
+  .triplet > *{ flex:0 0 auto; } /* 每個項目固定寬，避免被擠換行 */
+
   .field{display:flex;gap:6px;align-items:center}
   .field label{font-weight:700;color:#e6f1ff}
-  .field input{width:92px}
+  .field input{width:80px}
 
   /* 棋盤外框：置中 + 正方形 */
   .board-shell{
