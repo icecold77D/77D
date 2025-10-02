@@ -30,6 +30,12 @@
         "img": "snake_game/title.jpg",
         "href": "snake_game/index.html",
         "date": "2025-09-14"
+      },
+      {
+        "name": "mineswepper_game",
+        "img": "mineswepper/title.jpg",
+        "href": "mineswepper/index.html",
+        "date": "2025-09-29"
       }
     ]
   },
