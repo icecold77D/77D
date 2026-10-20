@@ -16,6 +16,7 @@
       }
     ]
   },
+  
   {
     "title": "遊戲類",
     "items": [
@@ -36,6 +37,12 @@
         "img": "minesweeper/title.jpg",
         "href": "minesweeper/index.html",
         "date": "2025-09-29"
+      },
+      {
+      "name": "neon_dodge",
+      "img": "neon_dodge/title.jpg",
+      "href": "neon_dodge/index.html",
+      "date": "2026-10-20"
       }
     ]
   },
